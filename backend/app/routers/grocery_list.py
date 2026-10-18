@@ -5,11 +5,21 @@ from fastapi import APIRouter, Depends, HTTPException, Response, status
 from pydantic import BaseModel
 
 from app import db
-from app.models import ListEntry, ListEntryIn, ListEntryPatch
-from app.routers.items import get_item, list_items
+from app.models import (
+    Item,
+    ItemIn,
+    ItemPatch,
+    ListEntry,
+    ListEntryIn,
+    ListEntryPatch,
+    Mode,
+    Package,
+    RestockIn,
+)
+from app.routers.items import create_item, get_item, list_items, update_item
 from app.routers.settings import get_settings
 from app.space import current_space
-from app.stock import is_low
+from app.stock import is_low, normalize_packages
 
 router = APIRouter(prefix="/api/list", tags=["grocery list"])
 
@@ -86,6 +96,45 @@ def generate(space: str = Depends(current_space)) -> GenerateResult:
             _save(space, entry)
             added.append(entry)
     return GenerateResult(added=added, list=entries + added)
+
+
+MAX_PACKAGES = 20
+
+
+def _with_bought(packages: list[Package], body: RestockIn, mode: Mode) -> list[Package]:
+    """Existing packages plus what was bought, with finished packages dropped."""
+    if mode == "count":
+        bought = [Package(count=body.quantity, expiresOn=body.expiresOn)]
+    else:
+        bought = [Package(level=100, expiresOn=body.expiresOn) for _ in range(body.quantity)]
+    combined = normalize_packages(packages + bought, mode)
+    if len(combined) > MAX_PACKAGES:
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_CONTENT,
+            f"An item can hold at most {MAX_PACKAGES} packages",
+        )
+    return combined
+
+
+@router.post("/{entry_id}/restock")
+def restock(entry_id: str, body: RestockIn, space: str = Depends(current_space)) -> Item:
+    """Add what was bought to the pantry and take the entry off the list."""
+    entry = get_entry(space, entry_id)
+    if entry.itemId is not None:
+        item = get_item(space, entry.itemId)
+        packages = _with_bought(item.packages, body, item.mode)
+        restocked = update_item(item.id, ItemPatch(packages=packages), space)
+    elif body.newItem is not None:
+        fields = body.newItem
+        packages = _with_bought([], body, fields.mode)
+        restocked = create_item(ItemIn(**fields.model_dump(), packages=packages), space)
+    else:
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_CONTENT,
+            "This entry isn't a pantry item yet; send newItem to add it",
+        )
+    db.delete(space, _sk(entry_id))
+    return restocked
 
 
 @router.patch("/{entry_id}")
