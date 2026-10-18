@@ -5,7 +5,15 @@ import { BottomSheet } from "../components/BottomSheet";
 import { ItemCard } from "../components/ItemCard";
 import { ItemForm } from "../components/ItemForm";
 import { PantryControls } from "../components/PantryControls";
-import { useCategories, useCreateItem, useDeleteItem, useItems, useUpdateItem } from "../hooks";
+import {
+  useCategories,
+  useCreateItem,
+  useDeleteItem,
+  useItems,
+  useList,
+  useSettings,
+  useUpdateItem,
+} from "../hooks";
 import {
   filterItems,
   groupItems,
@@ -31,6 +39,8 @@ export function PantryPage() {
   const createItem = useCreateItem();
   const updateItem = useUpdateItem();
   const deleteItem = useDeleteItem();
+  const settings = useSettings();
+  const list = useList();
   const [sheet, setSheet] = useState<Sheet>(null);
   const [search, setSearch] = useState("");
   // Filters and sort are remembered between visits; the search text is not.
@@ -51,9 +61,15 @@ export function PantryPage() {
   };
 
   // A pantry is a few hundred items at most, so filtering on every render is cheap.
-  const groups = groupItems(filterItems(allItems, allCategories, query), allCategories, query.sort);
+  const groups = groupItems(
+    filterItems(allItems, allCategories, query, settings),
+    allCategories,
+    query.sort,
+    settings,
+  );
   const countFor = (status: StatusFilter) =>
-    filterItems(allItems, allCategories, { ...query, search: "", status }).length;
+    filterItems(allItems, allCategories, { ...query, search: "", status }, settings).length;
+  const onList = new Set((list.data ?? []).map((e) => e.itemId));
   const counts = { all: countFor("all"), low: countFor("low"), expiring: countFor("expiring") };
 
   const filtered = search.trim() !== "" || view.status !== "all" || categoryId !== null;
@@ -133,7 +149,13 @@ export function PantryPage() {
             )}
             <ul className="space-y-2">
               {group.items.map((item) => (
-                <ItemCard key={item.id} item={item} onEdit={() => setSheet({ kind: "edit", item })} />
+                <ItemCard
+                  key={item.id}
+                  item={item}
+                  settings={settings}
+                  onList={onList.has(item.id)}
+                  onEdit={() => setSheet({ kind: "edit", item })}
+                />
               ))}
             </ul>
           </section>

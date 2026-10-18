@@ -9,7 +9,3 @@ export const LEVELS: { value: Level; label: string }[] = [
 ];
 
 export const levelLabel = (level: Level) => LEVELS.find((l) => l.value === level)?.label ?? "";
-
-// Pantry-wide defaults; become editable settings in stage 2.
-export const DEFAULT_BUY_WHEN_LEVEL: Level = 25;
-export const DEFAULT_BUY_WHEN_COUNT = 1;

@@ -1,8 +1,8 @@
 import { useState, type FormEvent } from "react";
 
 import type { Category, ItemInput, Level, Mode } from "../api";
-import { useCreateCategory } from "../hooks";
-import { DEFAULT_BUY_WHEN_COUNT, DEFAULT_BUY_WHEN_LEVEL, LEVELS, levelLabel } from "../lib/levels";
+import { useCreateCategory, useSettings } from "../hooks";
+import { LEVELS, levelLabel } from "../lib/levels";
 import { CountStepper } from "./CountStepper";
 import { ExpiryPicker } from "./ExpiryPicker";
 import { LevelPicker } from "./LevelPicker";
@@ -45,6 +45,7 @@ export function ItemForm({
     initial?.buyWhenLevel != null || initial?.buyWhenCount != null,
   );
   const createCategory = useCreateCategory();
+  const settings = useSettings();
 
   const set = <K extends keyof ItemInput>(key: K, value: ItemInput[K]) =>
     setItem((prev) => ({ ...prev, [key]: value }));
@@ -197,7 +198,7 @@ export function ItemForm({
                 }
                 className="w-full rounded-lg border border-stone-200 bg-white px-3 py-2.5 text-base"
               >
-                <option value="">Default (at {levelLabel(DEFAULT_BUY_WHEN_LEVEL)} or less)</option>
+                <option value="">Default (at {levelLabel(settings.buyWhenLevel)} or less)</option>
                 {LEVELS.map((l) => (
                   <option key={l.value} value={l.value}>
                     At {l.label} or less
@@ -214,7 +215,7 @@ export function ItemForm({
                   min={0}
                   max={999}
                   value={item.buyWhenCount ?? ""}
-                  placeholder={String(DEFAULT_BUY_WHEN_COUNT)}
+                  placeholder={String(settings.buyWhenCount)}
                   onChange={(e) =>
                     set("buyWhenCount", e.target.value === "" ? null : Number(e.target.value))
                   }

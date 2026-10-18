@@ -4,7 +4,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from app import db
-from app.routers import categories, items
+from app.routers import categories, grocery_list, items, settings
 
 
 @asynccontextmanager
@@ -22,6 +22,8 @@ app = FastAPI(
 )
 app.include_router(categories.router)
 app.include_router(items.router)
+app.include_router(settings.router)
+app.include_router(grocery_list.router)
 
 
 @app.get("/api/health")

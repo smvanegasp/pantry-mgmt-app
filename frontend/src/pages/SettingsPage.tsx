@@ -1,7 +1,16 @@
 import { useState, type FormEvent } from "react";
 
 import type { Category } from "../api";
-import { useCategories, useCreateCategory, useDeleteCategory, useRenameCategory } from "../hooks";
+import { CountStepper } from "../components/CountStepper";
+import { LevelPicker } from "../components/LevelPicker";
+import {
+  useCategories,
+  useCreateCategory,
+  useDeleteCategory,
+  useRenameCategory,
+  useSettings,
+  useUpdateSettings,
+} from "../hooks";
 
 function CategoryRow({ category }: { category: Category }) {
   const [editing, setEditing] = useState(false);
@@ -69,7 +78,46 @@ function CategoryRow({ category }: { category: Category }) {
   );
 }
 
+function ThresholdSettings() {
+  const settings = useSettings();
+  const update = useUpdateSettings();
+
+  return (
+    <section className="rounded-xl border border-stone-200 bg-white p-4">
+      <h2 className="text-lg font-semibold">Grocery list</h2>
+      <p className="mb-4 text-sm text-stone-500">
+        "Generate list" adds items once they reach these levels. You can override them per item.
+      </p>
+
+      <p className="mb-1.5 text-sm font-medium text-stone-600">Add "how full" items at or below</p>
+      <LevelPicker
+        label="Default level threshold"
+        value={settings.buyWhenLevel}
+        onChange={(buyWhenLevel) => update.mutate({ ...settings, buyWhenLevel })}
+      />
+
+      <p className="mt-4 mb-1.5 text-sm font-medium text-stone-600">
+        Add "how many" items with this many or fewer left
+      </p>
+      <CountStepper
+        value={settings.buyWhenCount}
+        onChange={(buyWhenCount) => update.mutate({ ...settings, buyWhenCount })}
+      />
+      {update.error && <p className="mt-2 text-sm text-red-600">{update.error.message}</p>}
+    </section>
+  );
+}
+
 export function SettingsPage() {
+  return (
+    <div className="space-y-4 pb-24">
+      <ThresholdSettings />
+      <CategorySettings />
+    </div>
+  );
+}
+
+function CategorySettings() {
   const categories = useCategories();
   const create = useCreateCategory();
   const [name, setName] = useState("");

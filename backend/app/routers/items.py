@@ -66,6 +66,8 @@ def update_item(item_id: str, body: ItemPatch, space: str = Depends(current_spac
         _check_category(space, changes["categoryId"])
     updated = Item.model_validate({**item.model_dump(), **changes, "updatedAt": _now()})
     _save(space, updated)
+    if updated.name != item.name:
+        _update_list_entries(space, item_id, name=updated.name)
     return updated
 
 
@@ -73,3 +75,11 @@ def update_item(item_id: str, body: ItemPatch, space: str = Depends(current_spac
 def delete_item(item_id: str, space: str = Depends(current_space)) -> None:
     get_item(space, item_id)
     db.delete(space, _sk(item_id))
+    # Keep it on the grocery list as a plain entry; the user may still want to buy it.
+    _update_list_entries(space, item_id, itemId=None)
+
+
+def _update_list_entries(space: str, item_id: str, **changes: object) -> None:
+    for row in db.query(space, "LIST#"):
+        if row.get("itemId") == item_id:
+            db.put(space, f"LIST#{row['id']}", {**row, **changes})

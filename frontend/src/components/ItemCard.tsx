@@ -1,4 +1,4 @@
-import type { Item } from "../api";
+import type { Item, Settings } from "../api";
 import { useUpdateItem } from "../hooks";
 import { expiryStatus, formatExpiry } from "../lib/dates";
 import { isLow } from "../lib/items";
@@ -11,15 +11,27 @@ const EXPIRY_STYLES = {
   ok: "bg-stone-100 text-stone-600",
 };
 
-export function ItemCard({ item, onEdit }: { item: Item; onEdit: () => void }) {
+interface Props {
+  item: Item;
+  settings: Settings;
+  onList: boolean;
+  onEdit: () => void;
+}
+
+export function ItemCard({ item, settings, onList, onEdit }: Props) {
   const update = useUpdateItem();
-  const low = isLow(item);
+  const low = isLow(item, settings);
 
   return (
     <li className="rounded-xl border border-stone-200 bg-white p-3 shadow-sm">
       <button type="button" onClick={onEdit} className="flex w-full items-start gap-2 text-left">
         <span className="flex-1 text-base font-semibold text-stone-900">{item.name}</span>
-        {low && (
+        {onList && (
+          <span className="rounded-full bg-sky-100 px-2 py-0.5 text-xs font-medium text-sky-800">
+            🛒 On list
+          </span>
+        )}
+        {low && !onList && (
           <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800">
             Low
           </span>

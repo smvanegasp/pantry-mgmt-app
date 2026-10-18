@@ -54,3 +54,31 @@ class Item(ItemIn):
     id: str
     createdAt: str
     updatedAt: str
+
+
+class Settings(BaseModel):
+    """Pantry-wide defaults; items can override them individually."""
+
+    buyWhenLevel: Level = 25
+    buyWhenCount: Count = 1
+
+
+class ListEntryIn(BaseModel):
+    """Add a pantry item (by id) or a free-text entry (by name) to the grocery list."""
+
+    itemId: str | None = None
+    name: Name | None = None
+
+
+class ListEntryPatch(BaseModel):
+    checked: bool | None = None
+    name: Name | None = None
+
+
+class ListEntry(BaseModel):
+    id: str
+    itemId: str | None
+    name: str
+    checked: bool = False
+    addedBy: Literal["auto", "manual"]
+    createdAt: str
