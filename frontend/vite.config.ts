@@ -1,11 +1,12 @@
 import { defineConfig } from "vite";
+import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
 
 // API_URL points at the backend container in docker compose.
 const apiUrl = process.env.API_URL ?? "http://localhost:8080";
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), tailwindcss()],
   server: {
     host: true,
     port: 5173,

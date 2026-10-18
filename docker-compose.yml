@@ -6,7 +6,27 @@ services:
       - "8080:8080"
     volumes:
       - ./backend/app:/app/app
+    environment:
+      DYNAMODB_ENDPOINT: http://dynamodb:8000
+      TABLE_NAME: pantry
+      AUTO_CREATE_TABLE: "1"
+      AWS_REGION: us-east-1
+      # DynamoDB Local accepts any credentials.
+      AWS_ACCESS_KEY_ID: local
+      AWS_SECRET_ACCESS_KEY: local
     command: uvicorn app.main:app --host 0.0.0.0 --port 8080 --reload
+    depends_on:
+      - dynamodb
+
+  dynamodb:
+    image: amazon/dynamodb-local:latest
+    # Root so it can write to the named volume.
+    user: root
+    command: -jar DynamoDBLocal.jar -sharedDb -dbPath /data
+    volumes:
+      - dynamodb_data:/data
+    ports:
+      - "8000:8000"
 
   web:
     image: node:22-alpine
@@ -23,4 +43,5 @@ services:
       - api
 
 volumes:
+  dynamodb_data:
   web_node_modules:
