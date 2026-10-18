@@ -1,5 +1,7 @@
 import type { Category } from "../api";
+import { SOON_DAYS } from "../lib/dates";
 import { SORT_OPTIONS, type ItemQuery, type SortKey, type StatusFilter } from "../lib/items";
+import { InfoTip } from "./InfoTip";
 
 interface Props {
   query: ItemQuery;
@@ -32,7 +34,7 @@ export function PantryControls({ query, onChange, categories, total, counts }: P
         className="w-full rounded-xl border border-stone-200 bg-white px-4 py-2.5 text-base"
       />
 
-      <div className="flex gap-1.5" role="radiogroup" aria-label="Show">
+      <div className="flex items-center gap-1.5" role="radiogroup" aria-label="Show">
         {STATUS.map((s) => {
           const active = query.status === s.value;
           return (
@@ -52,6 +54,12 @@ export function PantryControls({ query, onChange, categories, total, counts }: P
             </button>
           );
         })}
+        <span className="ml-auto">
+          <InfoTip title="Filters" align="right">
+            <b>Low</b>: items at or below their "add to list" point. <b>Expiring</b>: items with a
+            package that has expired or expires within {SOON_DAYS} days.
+          </InfoTip>
+        </span>
       </div>
 
       <div className="grid grid-cols-2 gap-2">

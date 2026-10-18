@@ -7,16 +7,22 @@ export interface Category {
   sortOrder: number;
 }
 
+/** One physical container (bag, bottle, batch of cans); uses `level` or `count` per the item's mode. */
+export interface Package {
+  id: string;
+  level: Level;
+  count: number;
+  expiresOn: string | null;
+}
+
 export interface Item {
   id: string;
   name: string;
   categoryId: string | null;
   mode: Mode;
-  level: Level;
-  count: number;
   buyWhenLevel: Level | null;
   buyWhenCount: number | null;
-  expiresOn: string | null;
+  packages: Package[];
   createdAt: string;
   updatedAt: string;
 }

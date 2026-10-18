@@ -1,3 +1,4 @@
+import { Basket, GearSix, ShoppingCart, type Icon } from "@phosphor-icons/react";
 import { useState } from "react";
 
 import { useList } from "./hooks";
@@ -5,11 +6,11 @@ import { ListPage } from "./pages/ListPage";
 import { PantryPage } from "./pages/PantryPage";
 import { SettingsPage } from "./pages/SettingsPage";
 
-const TABS = [
-  { id: "pantry", label: "Pantry", title: "Pantry", icon: "🥫" },
-  { id: "list", label: "List", title: "Grocery list", icon: "🛒" },
-  { id: "settings", label: "Settings", title: "Settings", icon: "⚙️" },
-] as const;
+const TABS: readonly { id: "pantry" | "list" | "settings"; label: string; title: string; icon: Icon }[] = [
+  { id: "pantry", label: "Pantry", title: "Pantry", icon: Basket },
+  { id: "list", label: "List", title: "Grocery list", icon: ShoppingCart },
+  { id: "settings", label: "Settings", title: "Settings", icon: GearSix },
+];
 
 type Tab = (typeof TABS)[number]["id"];
 
@@ -47,9 +48,7 @@ export function App() {
                 tab === t.id ? "text-emerald-700" : "text-stone-500"
               }`}
             >
-              <span className="text-xl" aria-hidden>
-                {t.icon}
-              </span>
+              <t.icon size={24} weight="fill" aria-hidden />
               {t.label}
               {t.id === "list" && toBuy > 0 && (
                 <span

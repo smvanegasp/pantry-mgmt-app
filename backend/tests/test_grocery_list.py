@@ -1,5 +1,9 @@
-def add_item(client, **body):
-    return client.post("/api/items", json=body).json()
+def add_item(client, *, level=None, count=None, packages=None, **body):
+    """Shorthand: `level=` / `count=` create a single package."""
+    if packages is None:
+        package = {k: v for k, v in {"level": level, "count": count}.items() if v is not None}
+        packages = [package]
+    return client.post("/api/items", json={**body, "packages": packages}).json()
 
 
 def names(entries):
@@ -42,6 +46,19 @@ def test_generate_uses_pantry_settings(client):
     add_item(client, name="Oil", level=50)
     client.put("/api/settings", json={"buyWhenLevel": 50, "buyWhenCount": 1})
     assert names(client.post("/api/list/generate").json()["added"]) == ["Oil"]
+
+
+def test_generate_uses_totals_across_packages(client):
+    # An open bag at 1/4 plus a full spare is not low; two 1/4 bags (total 1/2) aren't either.
+    add_item(client, name="Rice", packages=[{"level": 25}, {"level": 100}])
+    add_item(client, name="Flour", packages=[{"level": 25}, {"level": 25}])
+    # One can left in each of two batches = 2 total, above the default of 1.
+    add_item(client, name="Beans", mode="count", packages=[{"count": 1}, {"count": 1}])
+    add_item(client, name="Sugar", packages=[{"level": 25}])
+
+    added = client.post("/api/list/generate").json()["added"]
+
+    assert names(added) == ["Sugar"]
 
 
 def test_generate_does_not_duplicate(client):

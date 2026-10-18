@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import type { Category, Item } from "../api";
+import type { Category, Item, Package } from "../api";
 import { filterItems, groupItems, isExpiring, isLow, type ItemQuery } from "./items";
 
 const cats: Category[] = [
@@ -8,17 +8,18 @@ const cats: Category[] = [
   { id: "grains", name: "Grains", sortOrder: 1 },
 ];
 
-function item(overrides: Partial<Item>): Item {
+/** Shorthand: `level` / `count` / `expiresOn` describe a single package. */
+type ItemSpec = Partial<Item> & Partial<Pick<Package, "level" | "count" | "expiresOn">>;
+
+function item({ level = 100, count = 1, expiresOn = null, ...overrides }: ItemSpec): Item {
   return {
     id: overrides.name ?? "x",
     name: "x",
     categoryId: null,
     mode: "level",
-    level: 100,
-    count: 1,
     buyWhenLevel: null,
     buyWhenCount: null,
-    expiresOn: null,
+    packages: [{ id: "p", level, count, expiresOn }],
     createdAt: "2026-01-01T00:00:00+00:00",
     updatedAt: "2026-01-01T00:00:00+00:00",
     ...overrides,
@@ -59,6 +60,21 @@ describe("status helpers", () => {
     expect(isLow(item({ level: 50 }), settings)).toBe(true);
     expect(isLow(item({ level: 50, buyWhenLevel: 25 }), settings)).toBe(false);
     expect(isLow(item({ mode: "count", count: 3 }), settings)).toBe(true);
+  });
+
+  it("isLow uses the total across packages", () => {
+    const packages = (...levels: Package["level"][]) =>
+      levels.map((level, i) => ({ id: String(i), level, count: 1, expiresOn: null }));
+    expect(isLow(item({ packages: packages(25, 100) }))).toBe(false);
+    expect(isLow(item({ packages: packages(0, 25) }))).toBe(true);
+  });
+
+  it("isExpiring uses the earliest package", () => {
+    const packages = [
+      { id: "a", level: 100 as const, count: 1, expiresOn: "2027-06-01" },
+      { id: "b", level: 100 as const, count: 1, expiresOn: soon },
+    ];
+    expect(isExpiring(item({ packages }), today)).toBe(true);
   });
 
   it("isExpiring includes expired items", () => {
