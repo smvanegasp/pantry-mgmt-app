@@ -1,3 +1,4 @@
+import { Basket, Plus } from "@phosphor-icons/react";
 import { useState } from "react";
 
 import type { Item, ItemInput } from "../api";
@@ -114,7 +115,7 @@ export function PantryPage() {
 
       {items.isSuccess && total === 0 && (
         <div className="mt-16 text-center text-stone-500">
-          <p className="text-4xl">🥫</p>
+          <Basket size={48} weight="fill" className="mx-auto text-stone-300" aria-hidden />
           <p className="mt-2 font-medium">Your pantry is empty</p>
           <p className="text-sm">Tap + to add your first item.</p>
         </div>
@@ -165,10 +166,10 @@ export function PantryPage() {
       <button
         type="button"
         onClick={() => setSheet({ kind: "new" })}
-        className="fixed right-5 bottom-[calc(5rem+env(safe-area-inset-bottom))] z-30 h-14 w-14 rounded-full bg-emerald-600 text-3xl text-white shadow-lg active:bg-emerald-700"
+        className="fixed right-5 bottom-[calc(5rem+env(safe-area-inset-bottom))] z-30 inline-flex h-14 w-14 items-center justify-center rounded-full bg-emerald-600 text-white shadow-lg active:bg-emerald-700"
         aria-label="Add item"
       >
-        +
+        <Plus size={28} weight="bold" aria-hidden />
       </button>
 
       {sheet && (

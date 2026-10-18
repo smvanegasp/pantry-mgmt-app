@@ -1,20 +1,24 @@
 import type { Category, Item, Settings } from "../api";
 import { daysUntil, SOON_DAYS } from "./dates";
+import { earliestExpiry, totalStock } from "./packages";
 import { fuzzyMatch } from "./search";
 
 /** Matches the backend defaults; used until the real settings load. */
 export const DEFAULT_SETTINGS: Settings = { buyWhenLevel: 25, buyWhenCount: 1 };
 
-/** True when the item has reached its "buy when" threshold (its own, or the pantry default). */
+/** True when total stock has reached the "buy when" threshold (its own, or the pantry default). */
 export function isLow(item: Item, settings: Settings = DEFAULT_SETTINGS): boolean {
-  return item.mode === "level"
-    ? item.level <= (item.buyWhenLevel ?? settings.buyWhenLevel)
-    : item.count <= (item.buyWhenCount ?? settings.buyWhenCount);
+  const threshold =
+    item.mode === "level"
+      ? (item.buyWhenLevel ?? settings.buyWhenLevel)
+      : (item.buyWhenCount ?? settings.buyWhenCount);
+  return totalStock(item) <= threshold;
 }
 
-/** Expired or expiring within SOON_DAYS. */
+/** Any package expired or expiring within SOON_DAYS. */
 export function isExpiring(item: Item, today: Date = new Date()): boolean {
-  return item.expiresOn !== null && daysUntil(item.expiresOn, today) <= SOON_DAYS;
+  const expiry = earliestExpiry(item);
+  return expiry !== null && daysUntil(expiry, today) <= SOON_DAYS;
 }
 
 export type StatusFilter = "all" | "low" | "expiring";
@@ -45,7 +49,8 @@ const byName = (a: Item, b: Item) => a.name.localeCompare(b.name, undefined, { s
 
 /** Rough "how much is left" from 0 to 1, comparable across level and count items. */
 function stockScore(item: Item): number {
-  return item.mode === "level" ? item.level / 100 : Math.min(item.count, 4) / 4;
+  const total = totalStock(item);
+  return item.mode === "level" ? Math.min(total, 100) / 100 : Math.min(total, 4) / 4;
 }
 
 function comparator(sort: Exclude<SortKey, "category">, settings: Settings) {
@@ -55,7 +60,8 @@ function comparator(sort: Exclude<SortKey, "category">, settings: Settings) {
     case "expiry":
       // Items without a date go last.
       return (a: Item, b: Item) =>
-        (a.expiresOn ?? "9999-12-31").localeCompare(b.expiresOn ?? "9999-12-31") || byName(a, b);
+        (earliestExpiry(a) ?? "9999-12-31").localeCompare(earliestExpiry(b) ?? "9999-12-31") ||
+        byName(a, b);
     case "stock":
       // Items that are low come first, then the emptiest.
       return (a: Item, b: Item) =>

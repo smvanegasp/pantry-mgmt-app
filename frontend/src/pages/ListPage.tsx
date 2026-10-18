@@ -1,7 +1,9 @@
+import { CaretDown, CaretRight, Check, ShoppingCart, Sparkle, X } from "@phosphor-icons/react";
 import { useState } from "react";
 
 import type { Item, ListEntry } from "../api";
 import { AddToList } from "../components/AddToList";
+import { InfoTip } from "../components/InfoTip";
 import {
   useCategories,
   useDeleteListEntry,
@@ -13,17 +15,12 @@ import {
 } from "../hooks";
 import { groupByCategory } from "../lib/items";
 import { levelLabel } from "../lib/levels";
-
-function stockNote(item: Item | undefined): string | null {
-  if (!item) return null;
-  if (item.mode === "count") return `${item.count} left`;
-  return item.level === 0 ? "Empty" : `${levelLabel(item.level)} left`;
-}
+import { stockNote } from "../lib/packages";
 
 function EntryRow({ entry, item }: { entry: ListEntry; item?: Item }) {
   const update = useUpdateListEntry();
   const remove = useDeleteListEntry();
-  const note = stockNote(item);
+  const note = item ? stockNote(item) : null;
 
   return (
     <li className="flex items-center rounded-xl border border-stone-200 bg-white shadow-sm">
@@ -40,7 +37,7 @@ function EntryRow({ entry, item }: { entry: ListEntry; item?: Item }) {
             entry.checked ? "border-emerald-600 bg-emerald-600 text-white" : "border-stone-300"
           }`}
         >
-          {entry.checked && "✓"}
+          {entry.checked && <Check size={16} weight="bold" />}
         </span>
         <span className="min-w-0 flex-1">
           <span
@@ -57,7 +54,7 @@ function EntryRow({ entry, item }: { entry: ListEntry; item?: Item }) {
         aria-label={`Remove ${entry.name}`}
         className="self-stretch px-4 text-xl text-stone-400 active:text-red-600"
       >
-        ×
+        <X size={18} weight="bold" aria-hidden />
       </button>
     </li>
   );
@@ -101,14 +98,27 @@ export function ListPage() {
           disabled={generate.isPending}
           className="w-full rounded-xl bg-emerald-600 py-3.5 text-lg font-semibold text-white shadow-sm active:bg-emerald-700 disabled:opacity-60"
         >
-          {generate.isPending ? "Checking pantry…" : "✨ Generate list"}
+          {generate.isPending ? (
+            "Checking pantry…"
+          ) : (
+            <span className="inline-flex items-center gap-2">
+              <Sparkle size={20} weight="fill" aria-hidden /> Generate list
+            </span>
+          )}
         </button>
-        <p className="mt-1.5 text-center text-sm text-stone-500" aria-live="polite">
-          {generate.error
-            ? generate.error.message
-            : (message ??
-              `Adds everything at ${levelLabel(settings.buyWhenLevel)} or less, or ${settings.buyWhenCount} or fewer left.`)}
-        </p>
+        <div className="mt-1.5 flex items-start justify-center gap-1.5 text-center text-sm text-stone-500">
+          <p aria-live="polite">
+            {generate.error
+              ? generate.error.message
+              : (message ??
+                `Adds everything at ${levelLabel(settings.buyWhenLevel)} or less, or ${settings.buyWhenCount} or fewer left.`)}
+          </p>
+          <InfoTip title="Generate list" align="right">
+            Looks at every pantry item and adds the ones whose total has dropped to their "add to
+            list" point. Items already on the list aren't added twice. Change the defaults in
+            Settings, or per item in its edit screen.
+          </InfoTip>
+        </div>
       </div>
 
       <AddToList items={items.data ?? []} onListIds={new Set(entries.map((e) => e.itemId))} />
@@ -118,7 +128,7 @@ export function ListPage() {
 
       {list.isSuccess && entries.length === 0 && (
         <div className="mt-10 text-center text-stone-500">
-          <p className="text-4xl">🛒</p>
+          <ShoppingCart size={48} weight="fill" className="mx-auto text-stone-300" aria-hidden />
           <p className="mt-2 font-medium">Your grocery list is empty</p>
           <p className="text-sm">Generate it from your pantry or add things above.</p>
         </div>
@@ -148,7 +158,7 @@ export function ListPage() {
       ))}
 
       {entries.length > 0 && toBuy.length === 0 && (
-        <p className="text-center font-medium text-emerald-700">Everything's in the cart 🎉</p>
+        <p className="text-center font-medium text-emerald-700">Everything's in the cart</p>
       )}
 
       {inCart.length > 0 && (
@@ -159,7 +169,14 @@ export function ListPage() {
             aria-expanded={showCart}
             className="mb-2 text-sm font-semibold tracking-wide text-stone-500 uppercase"
           >
-            {showCart ? "▾" : "▸"} In cart · {inCart.length}
+            <span className="inline-flex items-center gap-1">
+              {showCart ? (
+                <CaretDown size={14} weight="bold" aria-hidden />
+              ) : (
+                <CaretRight size={14} weight="bold" aria-hidden />
+              )}
+              In cart · {inCart.length}
+            </span>
           </button>
           {showCart && (
             <ul className="space-y-2">

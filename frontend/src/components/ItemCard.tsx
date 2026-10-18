@@ -1,7 +1,16 @@
+import { CaretRight, Clock, ShoppingCart, WarningCircle } from "@phosphor-icons/react";
+
 import type { Item, Settings } from "../api";
 import { useUpdateItem } from "../hooks";
 import { expiryStatus, formatExpiry } from "../lib/dates";
 import { isLow } from "../lib/items";
+import {
+  activePackage,
+  changeActiveCount,
+  earliestExpiry,
+  packageSummary,
+  setActiveLevel,
+} from "../lib/packages";
 import { CountStepper } from "./CountStepper";
 import { LevelPicker } from "./LevelPicker";
 
@@ -21,45 +30,66 @@ interface Props {
 export function ItemCard({ item, settings, onList, onEdit }: Props) {
   const update = useUpdateItem();
   const low = isLow(item, settings);
+  const expiry = earliestExpiry(item);
+  const summary = packageSummary(item);
+  const active = activePackage(item);
 
   return (
     <li className="rounded-xl border border-stone-200 bg-white p-3 shadow-sm">
       <button type="button" onClick={onEdit} className="flex w-full items-start gap-2 text-left">
         <span className="flex-1 text-base font-semibold text-stone-900">{item.name}</span>
         {onList && (
-          <span className="rounded-full bg-sky-100 px-2 py-0.5 text-xs font-medium text-sky-800">
-            🛒 On list
+          <span className="inline-flex items-center gap-1 rounded-full bg-sky-100 px-2 py-0.5 text-xs font-medium text-sky-800">
+            <ShoppingCart size={12} weight="fill" aria-hidden /> On list
           </span>
         )}
         {low && !onList && (
-          <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800">
-            Low
+          <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800">
+            <WarningCircle size={12} weight="fill" aria-hidden /> Low
           </span>
         )}
-        <span className="text-stone-400" aria-hidden>
-          ›
-        </span>
+        <CaretRight size={16} weight="bold" className="mt-1 text-stone-400" aria-hidden />
       </button>
-      {item.expiresOn && (
-        <p
-          className={`mt-1 inline-block rounded-full px-2 py-0.5 text-xs font-medium ${EXPIRY_STYLES[expiryStatus(item.expiresOn)]}`}
-        >
-          {formatExpiry(item.expiresOn)}
-        </p>
+      {(expiry || summary) && (
+        <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
+          {expiry && (
+            <span
+              className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${EXPIRY_STYLES[expiryStatus(expiry)]}`}
+            >
+              <Clock size={12} weight="fill" aria-hidden />
+              {summary
+                ? formatExpiry(expiry).replace(/^Expires/, "Next expires").replace(/^Expired/, "One expired")
+                : formatExpiry(expiry)}
+            </span>
+          )}
+          {summary && <span className="text-xs text-stone-500">{summary}</span>}
+        </div>
       )}
       <div className="mt-2">
+        {summary && (
+          <p className="mb-1 text-xs text-stone-500">
+            {item.mode === "level" ? "Open package" : "First to expire"}
+          </p>
+        )}
         {item.mode === "level" ? (
           <LevelPicker
             compact
             label={`${item.name} fill level`}
-            value={item.level}
-            onChange={(level) => update.mutate({ id: item.id, patch: { level } })}
+            value={active.level}
+            onChange={(level) =>
+              update.mutate({ id: item.id, patch: { packages: setActiveLevel(item, level) } })
+            }
           />
         ) : (
           <CountStepper
             compact
-            value={item.count}
-            onChange={(count) => update.mutate({ id: item.id, patch: { count } })}
+            value={active.count}
+            onChange={(count) =>
+              update.mutate({
+                id: item.id,
+                patch: { packages: changeActiveCount(item, count - active.count) },
+              })
+            }
           />
         )}
       </div>

@@ -1,10 +1,13 @@
+import { CaretDown, CaretRight, Plus, Trash } from "@phosphor-icons/react";
 import { useState, type FormEvent } from "react";
 
-import type { Category, ItemInput, Level, Mode } from "../api";
+import type { Category, ItemInput, Level, Mode, Package } from "../api";
 import { useCreateCategory, useSettings } from "../hooks";
 import { LEVELS, levelLabel } from "../lib/levels";
+import { newPackage } from "../lib/packages";
 import { CountStepper } from "./CountStepper";
 import { ExpiryPicker } from "./ExpiryPicker";
+import { InfoTip } from "./InfoTip";
 import { LevelPicker } from "./LevelPicker";
 
 interface Props {
@@ -17,18 +20,37 @@ interface Props {
   onDelete?: () => void;
 }
 
-const EMPTY: ItemInput = {
-  name: "",
-  categoryId: null,
-  mode: "level",
-  level: 100,
-  count: 1,
-  buyWhenLevel: null,
-  buyWhenCount: null,
-  expiresOn: null,
-};
-
 const NEW_CATEGORY = "__new__";
+const MAX_PACKAGES = 20;
+
+const label = "mb-1.5 block text-sm font-medium text-stone-600";
+
+function PackageFields({
+  mode,
+  pkg,
+  onChange,
+}: {
+  mode: Mode;
+  pkg: Package;
+  onChange: (pkg: Package) => void;
+}) {
+  return (
+    <div className="space-y-4">
+      <div>
+        <span className={label}>{mode === "level" ? "How full is it?" : "How many?"}</span>
+        {mode === "level" ? (
+          <LevelPicker value={pkg.level} onChange={(level) => onChange({ ...pkg, level })} />
+        ) : (
+          <CountStepper value={pkg.count} onChange={(count) => onChange({ ...pkg, count })} />
+        )}
+      </div>
+      <div>
+        <span className={label}>Expiration date (optional)</span>
+        <ExpiryPicker value={pkg.expiresOn} onChange={(expiresOn) => onChange({ ...pkg, expiresOn })} />
+      </div>
+    </div>
+  );
+}
 
 export function ItemForm({
   initial,
@@ -39,7 +61,17 @@ export function ItemForm({
   onSubmit,
   onDelete,
 }: Props) {
-  const [item, setItem] = useState<ItemInput>(initial ?? EMPTY);
+  const [item, setItem] = useState<ItemInput>(
+    () =>
+      initial ?? {
+        name: "",
+        categoryId: null,
+        mode: "level",
+        buyWhenLevel: null,
+        buyWhenCount: null,
+        packages: [newPackage()],
+      },
+  );
   const [newCategory, setNewCategory] = useState<string | null>(null);
   const [showBuyWhen, setShowBuyWhen] = useState(
     initial?.buyWhenLevel != null || initial?.buyWhenCount != null,
@@ -49,6 +81,12 @@ export function ItemForm({
 
   const set = <K extends keyof ItemInput>(key: K, value: ItemInput[K]) =>
     setItem((prev) => ({ ...prev, [key]: value }));
+
+  const setPackage = (pkg: Package) =>
+    set(
+      "packages",
+      item.packages.map((p) => (p.id === pkg.id ? pkg : p)),
+    );
 
   async function addCategory() {
     const name = newCategory?.trim();
@@ -64,7 +102,7 @@ export function ItemForm({
     onSubmit({ ...item, name: item.name.trim() });
   }
 
-  const label = "mb-1.5 block text-sm font-medium text-stone-600";
+  const several = item.packages.length > 1;
 
   return (
     <form onSubmit={submit} className="space-y-5">
@@ -147,7 +185,13 @@ export function ItemForm({
       </div>
 
       <div>
-        <span className={label}>Track by</span>
+        <span className={`${label} flex items-center gap-1.5`}>
+          Track by
+          <InfoTip title="How full vs. how many">
+            Use <b>How full</b> for things you use a bit at a time (rice, oil, coffee) and{" "}
+            <b>How many</b> for things you count (cans, eggs, bottles).
+          </InfoTip>
+        </span>
         <div className="grid grid-cols-2 gap-1 rounded-lg bg-stone-100 p-1" role="radiogroup">
           {(["level", "count"] as Mode[]).map((mode) => (
             <button
@@ -164,29 +208,77 @@ export function ItemForm({
             </button>
           ))}
         </div>
-        <div className="mt-3">
-          {item.mode === "level" ? (
-            <LevelPicker value={item.level} onChange={(v) => set("level", v)} />
-          ) : (
-            <CountStepper value={item.count} onChange={(v) => set("count", v)} />
-          )}
+      </div>
+
+      {several ? (
+        <div className="space-y-3">
+          {item.packages.map((pkg, i) => (
+            <section
+              key={pkg.id}
+              aria-label={`Package ${i + 1}`}
+              className="rounded-xl border border-stone-200 p-3"
+            >
+              <div className="mb-3 flex items-center justify-between">
+                <h3 className="text-sm font-semibold text-stone-700">Package {i + 1}</h3>
+                <button
+                  type="button"
+                  onClick={() =>
+                    set(
+                      "packages",
+                      item.packages.filter((p) => p.id !== pkg.id),
+                    )
+                  }
+                  className="-my-1 inline-flex items-center gap-1 rounded-lg px-2 py-1 text-sm text-red-600"
+                  aria-label={`Remove package ${i + 1}`}
+                >
+                  <Trash size={16} weight="fill" aria-hidden /> Remove
+                </button>
+              </div>
+              <PackageFields mode={item.mode} pkg={pkg} onChange={setPackage} />
+            </section>
+          ))}
         </div>
-      </div>
+      ) : (
+        <PackageFields mode={item.mode} pkg={item.packages[0]} onChange={setPackage} />
+      )}
+
+      {item.packages.length < MAX_PACKAGES && (
+        <div className="flex items-center gap-1.5">
+          <button
+            type="button"
+            onClick={() => set("packages", [...item.packages, newPackage()])}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-dashed border-stone-300 px-3 py-2 text-sm font-medium text-stone-700"
+          >
+            <Plus size={16} weight="bold" aria-hidden /> Add another package
+          </button>
+          <InfoTip title="Packages" align="right">
+            Have an open bag and a spare, or cans that expire on different dates? Add each as a
+            package. The grocery list looks at the <b>total</b>, and the quick buttons on the
+            pantry card change the open (or first-to-expire) package.
+          </InfoTip>
+        </div>
+      )}
 
       <div>
-        <span className={label}>Expiration date (optional)</span>
-        <ExpiryPicker value={item.expiresOn} onChange={(v) => set("expiresOn", v)} />
-      </div>
-
-      <div>
-        <button
-          type="button"
-          onClick={() => setShowBuyWhen((s) => !s)}
-          className="text-sm font-medium text-emerald-700"
-          aria-expanded={showBuyWhen}
-        >
-          {showBuyWhen ? "▾" : "▸"} Add to grocery list when…
-        </button>
+        <div className="flex items-center gap-1.5">
+          <button
+            type="button"
+            onClick={() => setShowBuyWhen((s) => !s)}
+            className="inline-flex items-center gap-1 text-sm font-medium text-emerald-700"
+            aria-expanded={showBuyWhen}
+          >
+            {showBuyWhen ? (
+              <CaretDown size={14} weight="bold" aria-hidden />
+            ) : (
+              <CaretRight size={14} weight="bold" aria-hidden />
+            )}
+            Add to grocery list when…
+          </button>
+          <InfoTip title="Add to list when" align="right">
+            "Generate list" adds this item once its total drops to this point. Leave it on Default
+            to use the pantry-wide setting from Settings.
+          </InfoTip>
+        </div>
         {showBuyWhen && (
           <div className="mt-2">
             {item.mode === "level" ? (

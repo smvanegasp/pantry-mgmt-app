@@ -1,7 +1,8 @@
+import uuid
 from datetime import date
-from typing import Annotated, Literal
+from typing import Annotated, Any, Literal
 
-from pydantic import BaseModel, Field, StringConstraints
+from pydantic import BaseModel, Field, StringConstraints, model_validator
 
 Name = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=80)]
 # Fill level presets: Empty, 1/4, 1/2, 3/4, Full.
@@ -25,35 +26,61 @@ class Category(BaseModel):
     sortOrder: int
 
 
+class Package(BaseModel):
+    """One physical container of a product: a bag, a bottle, a batch of cans.
+
+    Only `level` or `count` is used, depending on the item's mode.
+    """
+
+    id: str = Field(default_factory=lambda: uuid.uuid4().hex)
+    level: Level = 100
+    count: Count = 1
+    expiresOn: date | None = None
+
+
+Packages = Annotated[list[Package], Field(min_length=1, max_length=20)]
+
+
 class ItemIn(BaseModel):
     name: Name
     categoryId: str | None = None
     mode: Mode = "level"
-    level: Level = 100
-    count: Count = 1
     # None means "use the pantry-wide default".
     buyWhenLevel: Level | None = None
     buyWhenCount: Count | None = None
-    expiresOn: date | None = None
+    packages: Packages = Field(default_factory=lambda: [Package()])
 
 
 class ItemPatch(BaseModel):
-    """Partial update; send a field as null to clear it."""
+    """Partial update; send a field as null to clear it. `packages` replaces the whole list."""
 
     name: Name | None = None
     categoryId: str | None = None
     mode: Mode | None = None
-    level: Level | None = None
-    count: Count | None = None
     buyWhenLevel: Level | None = None
     buyWhenCount: Count | None = None
-    expiresOn: date | None = None
+    packages: Packages | None = None
 
 
 class Item(ItemIn):
     id: str
     createdAt: str
     updatedAt: str
+
+    @model_validator(mode="before")
+    @classmethod
+    def _upgrade_single_package_rows(cls, data: Any) -> Any:
+        """Rows saved before packages existed kept level/count/expiresOn on the item."""
+        if isinstance(data, dict) and "packages" not in data:
+            data = dict(data)
+            data["packages"] = [
+                {
+                    "level": data.pop("level", 100),
+                    "count": data.pop("count", 1),
+                    "expiresOn": data.pop("expiresOn", None),
+                }
+            ]
+        return data
 
 
 class Settings(BaseModel):

@@ -1,3 +1,4 @@
+import { X } from "@phosphor-icons/react";
 import { useEffect, type ReactNode } from "react";
 
 interface Props {
@@ -31,10 +32,10 @@ export function BottomSheet({ title, onClose, children }: Props) {
           <button
             type="button"
             onClick={onClose}
-            className="-mr-2 rounded-full px-3 py-1 text-2xl leading-none text-stone-500 hover:bg-stone-100"
+            className="-mr-2 rounded-full p-2 text-stone-500 hover:bg-stone-100"
             aria-label="Close"
           >
-            ×
+            <X size={20} weight="bold" aria-hidden />
           </button>
         </div>
         <div className="overflow-y-auto px-4 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
