@@ -1,9 +1,10 @@
-import { CaretDown, CaretRight, Check, ShoppingCart, Sparkle, X } from "@phosphor-icons/react";
+import { CaretDown, CaretRight, Check, House, ShoppingCart, Sparkle, X } from "@phosphor-icons/react";
 import { useState } from "react";
 
 import type { Item, ListEntry } from "../api";
 import { AddToList } from "../components/AddToList";
 import { InfoTip } from "../components/InfoTip";
+import { RestockSheet } from "../components/RestockSheet";
 import {
   useCategories,
   useDeleteListEntry,
@@ -68,6 +69,8 @@ export function ListPage() {
   const generate = useGenerateList();
   const [message, setMessage] = useState<string | null>(null);
   const [showCart, setShowCart] = useState(true);
+  // Snapshot of the cart when "I'm home" is tapped, so the sheet keeps its cards as they're handled.
+  const [restocking, setRestocking] = useState<ListEntry[] | null>(null);
 
   const entries = list.data ?? [];
   const itemsById = new Map((items.data ?? []).map((i) => [i.id, i]));
@@ -90,7 +93,7 @@ export function ListPage() {
   }
 
   return (
-    <div className="space-y-5 pb-24">
+    <div className={`space-y-5 ${inCart.length > 0 ? "pb-44" : "pb-24"}`}>
       <div>
         <button
           type="button"
@@ -186,6 +189,28 @@ export function ListPage() {
             </ul>
           )}
         </section>
+      )}
+
+      {inCart.length > 0 && (
+        <div className="fixed inset-x-0 bottom-[calc(4rem+env(safe-area-inset-bottom))] z-20 px-4 pb-3">
+          <button
+            type="button"
+            onClick={() => setRestocking(inCart)}
+            className="mx-auto flex w-full max-w-lg items-center justify-center gap-2 rounded-xl bg-stone-900 py-3.5 text-lg font-semibold text-white shadow-lg active:bg-stone-800"
+          >
+            <House size={22} weight="fill" aria-hidden />
+            I'm home · put away {inCart.length}
+          </button>
+        </div>
+      )}
+
+      {restocking && (
+        <RestockSheet
+          entries={restocking}
+          itemsById={itemsById}
+          categories={categories.data ?? []}
+          onClose={() => setRestocking(null)}
+        />
       )}
     </div>
   );

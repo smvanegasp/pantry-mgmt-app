@@ -102,6 +102,26 @@ class ListEntryPatch(BaseModel):
     name: Name | None = None
 
 
+class NewItemFields(BaseModel):
+    """What's needed to create a pantry item from a free-text list entry."""
+
+    name: Name
+    categoryId: str | None = None
+    mode: Mode = "level"
+
+
+class RestockIn(BaseModel):
+    """Put a bought list entry away.
+
+    "How full" items get `quantity` new full packages; "how many" items get one new
+    package holding `quantity`. Free-text entries need `newItem` to become pantry items.
+    """
+
+    quantity: Annotated[int, Field(ge=1, le=99)] = 1
+    expiresOn: date | None = None
+    newItem: NewItemFields | None = None
+
+
 class ListEntry(BaseModel):
     id: str
     itemId: str | None

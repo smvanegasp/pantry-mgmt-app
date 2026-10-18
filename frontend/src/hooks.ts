@@ -1,6 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { api, type Item, type ItemInput, type ListEntry, type Settings } from "./api";
+import {
+  api,
+  type Item,
+  type ItemInput,
+  type ListEntry,
+  type RestockInput,
+  type Settings,
+} from "./api";
 import { DEFAULT_SETTINGS } from "./lib/items";
 
 const ITEMS = ["items"];
@@ -58,6 +65,18 @@ export function useUpdateListEntry() {
     },
     onError: (_err, _vars, context) => qc.setQueryData(LIST, context?.previous),
     onSettled: () => qc.invalidateQueries({ queryKey: LIST }),
+  });
+}
+
+export function useRestock() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ entryId, body }: { entryId: string; body: RestockInput }) =>
+      api.restock(entryId, body),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ITEMS });
+      qc.invalidateQueries({ queryKey: LIST });
+    },
   });
 }
 

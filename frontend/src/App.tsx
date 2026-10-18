@@ -29,11 +29,9 @@ export function App() {
 
   return (
     <div className="mx-auto min-h-dvh max-w-lg">
-      <header className="sticky top-0 z-20 border-b border-stone-200 bg-stone-50/95 px-4 pt-[max(0.75rem,env(safe-area-inset-top))] pb-3 backdrop-blur">
-        <h1 className="text-2xl font-bold">{current.title}</h1>
-      </header>
-
-      <main className="px-4 pt-4">
+      <main className="px-4 pt-[max(1rem,env(safe-area-inset-top))]">
+        {/* The tab bar shows where you are; the heading is for screen readers. */}
+        <h1 className="sr-only">{current.title}</h1>
         <Page />
       </main>
 

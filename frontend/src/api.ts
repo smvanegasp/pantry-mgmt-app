@@ -43,6 +43,16 @@ export interface ListEntry {
   createdAt: string;
 }
 
+/**
+ * "How full" items get `quantity` new full packages; "how many" items get one package
+ * holding `quantity`. Free-text entries need `newItem` to become pantry items.
+ */
+export interface RestockInput {
+  quantity: number;
+  expiresOn: string | null;
+  newItem?: { name: string; categoryId: string | null; mode: Mode };
+}
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`/api${path}`, {
     ...init,
@@ -90,4 +100,6 @@ export const api = {
   updateListEntry: (id: string, patch: Partial<Pick<ListEntry, "checked" | "name">>) =>
     request<ListEntry>(`/list/${id}`, json("PATCH", patch)),
   deleteListEntry: (id: string) => request<void>(`/list/${id}`, { method: "DELETE" }),
+  restock: (entryId: string, body: RestockInput) =>
+    request<Item>(`/list/${entryId}/restock`, json("POST", body)),
 };
