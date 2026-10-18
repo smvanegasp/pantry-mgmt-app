@@ -1,7 +1,9 @@
 # Local development stack. Open http://localhost:5173 (or tunnel it with ngrok).
 services:
   api:
-    build: ./backend
+    build:
+      context: ./backend
+      target: app
     ports:
       - "8080:8080"
     volumes:
