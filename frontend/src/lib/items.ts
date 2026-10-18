@@ -1,13 +1,15 @@
-import type { Category, Item } from "../api";
+import type { Category, Item, Settings } from "../api";
 import { daysUntil, SOON_DAYS } from "./dates";
-import { DEFAULT_BUY_WHEN_COUNT, DEFAULT_BUY_WHEN_LEVEL } from "./levels";
 import { fuzzyMatch } from "./search";
 
-/** True when the item has reached its "buy when" threshold. */
-export function isLow(item: Item): boolean {
+/** Matches the backend defaults; used until the real settings load. */
+export const DEFAULT_SETTINGS: Settings = { buyWhenLevel: 25, buyWhenCount: 1 };
+
+/** True when the item has reached its "buy when" threshold (its own, or the pantry default). */
+export function isLow(item: Item, settings: Settings = DEFAULT_SETTINGS): boolean {
   return item.mode === "level"
-    ? item.level <= (item.buyWhenLevel ?? DEFAULT_BUY_WHEN_LEVEL)
-    : item.count <= (item.buyWhenCount ?? DEFAULT_BUY_WHEN_COUNT);
+    ? item.level <= (item.buyWhenLevel ?? settings.buyWhenLevel)
+    : item.count <= (item.buyWhenCount ?? settings.buyWhenCount);
 }
 
 /** Expired or expiring within SOON_DAYS. */
@@ -46,43 +48,70 @@ function stockScore(item: Item): number {
   return item.mode === "level" ? item.level / 100 : Math.min(item.count, 4) / 4;
 }
 
-const COMPARATORS: Record<Exclude<SortKey, "category">, (a: Item, b: Item) => number> = {
-  name: byName,
-  // Items without a date go last.
-  expiry: (a, b) =>
-    (a.expiresOn ?? "9999-12-31").localeCompare(b.expiresOn ?? "9999-12-31") || byName(a, b),
-  // Items that are low come first, then the emptiest.
-  stock: (a, b) =>
-    Number(isLow(b)) - Number(isLow(a)) || stockScore(a) - stockScore(b) || byName(a, b),
-  updated: (a, b) => b.updatedAt.localeCompare(a.updatedAt) || byName(a, b),
-};
+function comparator(sort: Exclude<SortKey, "category">, settings: Settings) {
+  switch (sort) {
+    case "name":
+      return byName;
+    case "expiry":
+      // Items without a date go last.
+      return (a: Item, b: Item) =>
+        (a.expiresOn ?? "9999-12-31").localeCompare(b.expiresOn ?? "9999-12-31") || byName(a, b);
+    case "stock":
+      // Items that are low come first, then the emptiest.
+      return (a: Item, b: Item) =>
+        Number(isLow(b, settings)) - Number(isLow(a, settings)) ||
+        stockScore(a) - stockScore(b) ||
+        byName(a, b);
+    case "updated":
+      return (a: Item, b: Item) => b.updatedAt.localeCompare(a.updatedAt) || byName(a, b);
+  }
+}
 
-export function filterItems(items: Item[], categories: Category[], q: ItemQuery): Item[] {
+export function filterItems(
+  items: Item[],
+  categories: Category[],
+  q: ItemQuery,
+  settings: Settings = DEFAULT_SETTINGS,
+): Item[] {
   const categoryName = new Map(categories.map((c) => [c.id, c.name]));
-  const known = new Set(categoryName.keys());
   return items.filter((item) => {
-    if (q.status === "low" && !isLow(item)) return false;
+    if (q.status === "low" && !isLow(item, settings)) return false;
     if (q.status === "expiring" && !isExpiring(item)) return false;
-    if (q.categoryId === "none" && item.categoryId && known.has(item.categoryId)) return false;
+    if (q.categoryId === "none" && item.categoryId && categoryName.has(item.categoryId)) return false;
     if (q.categoryId && q.categoryId !== "none" && item.categoryId !== q.categoryId) return false;
     const category = item.categoryId ? (categoryName.get(item.categoryId) ?? "") : "";
     return fuzzyMatch(q.search, item.name, category);
   });
 }
 
-export function groupItems(items: Item[], categories: Category[], sort: SortKey): ItemGroup[] {
-  if (sort !== "category") {
-    return items.length ? [{ key: "all", name: null, items: [...items].sort(COMPARATORS[sort]) }] : [];
-  }
-  const groups: ItemGroup[] = categories
-    .map((c) => ({
-      key: c.id,
-      name: c.name,
-      items: items.filter((i) => i.categoryId === c.id).sort(byName),
-    }))
+/** Splits items into category sections, in category order, uncategorized last. */
+export function groupByCategory<T>(
+  entries: T[],
+  categories: Category[],
+  categoryOf: (entry: T) => string | null,
+  otherName = "No category",
+): { key: string; name: string; items: T[] }[] {
+  const groups = categories
+    .map((c) => ({ key: c.id, name: c.name, items: entries.filter((e) => categoryOf(e) === c.id) }))
     .filter((g) => g.items.length > 0);
   const known = new Set(categories.map((c) => c.id));
-  const other = items.filter((i) => !i.categoryId || !known.has(i.categoryId)).sort(byName);
-  if (other.length) groups.push({ key: "none", name: "No category", items: other });
+  const other = entries.filter((e) => {
+    const id = categoryOf(e);
+    return !id || !known.has(id);
+  });
+  if (other.length) groups.push({ key: "none", name: otherName, items: other });
   return groups;
+}
+
+export function groupItems(
+  items: Item[],
+  categories: Category[],
+  sort: SortKey,
+  settings: Settings = DEFAULT_SETTINGS,
+): ItemGroup[] {
+  if (sort !== "category") {
+    if (!items.length) return [];
+    return [{ key: "all", name: null, items: [...items].sort(comparator(sort, settings)) }];
+  }
+  return groupByCategory([...items].sort(byName), categories, (i) => i.categoryId);
 }

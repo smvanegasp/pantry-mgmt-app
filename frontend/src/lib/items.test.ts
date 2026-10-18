@@ -54,6 +54,13 @@ describe("status helpers", () => {
     expect(isLow(item({ mode: "count", count: 3, buyWhenCount: 2 }))).toBe(false);
   });
 
+  it("isLow uses pantry settings when the item has no override", () => {
+    const settings = { buyWhenLevel: 50, buyWhenCount: 3 } as const;
+    expect(isLow(item({ level: 50 }), settings)).toBe(true);
+    expect(isLow(item({ level: 50, buyWhenLevel: 25 }), settings)).toBe(false);
+    expect(isLow(item({ mode: "count", count: 3 }), settings)).toBe(true);
+  });
+
   it("isExpiring includes expired items", () => {
     expect(isExpiring(item({ expiresOn: "2026-10-01" }), today)).toBe(true);
     expect(isExpiring(item({ expiresOn: soon }), today)).toBe(true);

@@ -23,6 +23,20 @@ export interface Item {
 
 export type ItemInput = Omit<Item, "id" | "createdAt" | "updatedAt">;
 
+export interface Settings {
+  buyWhenLevel: Level;
+  buyWhenCount: number;
+}
+
+export interface ListEntry {
+  id: string;
+  itemId: string | null;
+  name: string;
+  checked: boolean;
+  addedBy: "auto" | "manual";
+  createdAt: string;
+}
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`/api${path}`, {
     ...init,
@@ -58,4 +72,16 @@ export const api = {
   updateCategory: (id: string, patch: Partial<Pick<Category, "name" | "sortOrder">>) =>
     request<Category>(`/categories/${id}`, json("PATCH", patch)),
   deleteCategory: (id: string) => request<void>(`/categories/${id}`, { method: "DELETE" }),
+
+  getSettings: () => request<Settings>("/settings"),
+  updateSettings: (settings: Settings) => request<Settings>("/settings", json("PUT", settings)),
+
+  getList: () => request<ListEntry[]>("/list"),
+  addToList: (entry: { itemId: string } | { name: string }) =>
+    request<ListEntry>("/list", json("POST", entry)),
+  generateList: () =>
+    request<{ added: ListEntry[]; list: ListEntry[] }>("/list/generate", { method: "POST" }),
+  updateListEntry: (id: string, patch: Partial<Pick<ListEntry, "checked" | "name">>) =>
+    request<ListEntry>(`/list/${id}`, json("PATCH", patch)),
+  deleteListEntry: (id: string) => request<void>(`/list/${id}`, { method: "DELETE" }),
 };
