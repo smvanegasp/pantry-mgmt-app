@@ -12,6 +12,8 @@ export default defineConfig({
     port: 5173,
     // Allow ngrok (and any tunnel) hostnames to reach the dev server.
     allowedHosts: true,
+    // Docker on Windows doesn't forward file-change events into containers.
+    watch: process.env.VITE_USE_POLLING ? { usePolling: true, interval: 300 } : undefined,
     proxy: {
       "/api": apiUrl,
     },

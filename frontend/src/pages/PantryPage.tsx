@@ -1,25 +1,28 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 
-import type { Category, Item, ItemInput } from "../api";
+import type { Item, ItemInput } from "../api";
 import { BottomSheet } from "../components/BottomSheet";
 import { ItemCard } from "../components/ItemCard";
 import { ItemForm } from "../components/ItemForm";
+import { PantryControls } from "../components/PantryControls";
 import { useCategories, useCreateItem, useDeleteItem, useItems, useUpdateItem } from "../hooks";
+import {
+  filterItems,
+  groupItems,
+  type ItemQuery,
+  type SortKey,
+  type StatusFilter,
+} from "../lib/items";
+import { usePersistentState } from "../lib/usePersistentState";
 
 type Sheet = { kind: "new" } | { kind: "edit"; item: Item } | null;
 
+type ViewPrefs = { status: StatusFilter; categoryId: string | null; sort: SortKey };
+
+const DEFAULT_VIEW: ViewPrefs = { status: "all", categoryId: null, sort: "category" };
+
 function toInput({ id: _id, createdAt: _c, updatedAt: _u, ...input }: Item): ItemInput {
   return input;
-}
-
-function groupByCategory(items: Item[], categories: Category[]) {
-  const groups = categories
-    .map((c) => ({ key: c.id, name: c.name, items: items.filter((i) => i.categoryId === c.id) }))
-    .filter((g) => g.items.length > 0);
-  const known = new Set(categories.map((c) => c.id));
-  const other = items.filter((i) => !i.categoryId || !known.has(i.categoryId));
-  if (other.length) groups.push({ key: "none", name: "No category", items: other });
-  return groups;
 }
 
 export function PantryPage() {
@@ -30,12 +33,30 @@ export function PantryPage() {
   const deleteItem = useDeleteItem();
   const [sheet, setSheet] = useState<Sheet>(null);
   const [search, setSearch] = useState("");
+  // Filters and sort are remembered between visits; the search text is not.
+  const [view, setView] = usePersistentState<ViewPrefs>("pantry.view", DEFAULT_VIEW);
 
-  const groups = useMemo(() => {
-    const term = search.trim().toLowerCase();
-    const visible = (items.data ?? []).filter((i) => i.name.toLowerCase().includes(term));
-    return groupByCategory(visible, categories.data ?? []);
-  }, [items.data, categories.data, search]);
+  const allItems = items.data ?? [];
+  const allCategories = categories.data ?? [];
+  // A remembered category that has since been deleted falls back to "all".
+  const categoryId =
+    view.categoryId === "none" || allCategories.some((c) => c.id === view.categoryId)
+      ? view.categoryId
+      : null;
+  const query: ItemQuery = { ...view, categoryId, search };
+
+  const setQuery = ({ search: nextSearch, ...nextView }: ItemQuery) => {
+    setSearch(nextSearch);
+    setView(nextView);
+  };
+
+  // A pantry is a few hundred items at most, so filtering on every render is cheap.
+  const groups = groupItems(filterItems(allItems, allCategories, query), allCategories, query.sort);
+  const countFor = (status: StatusFilter) =>
+    filterItems(allItems, allCategories, { ...query, search: "", status }).length;
+  const counts = { all: countFor("all"), low: countFor("low"), expiring: countFor("expiring") };
+
+  const filtered = search.trim() !== "" || view.status !== "all" || categoryId !== null;
 
   const close = () => {
     setSheet(null);
@@ -58,17 +79,17 @@ export function PantryPage() {
     close();
   }
 
-  const total = items.data?.length ?? 0;
+  const total = allItems.length;
 
   return (
     <div className="pb-28">
       {total > 0 && (
-        <input
-          type="search"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder={`Search ${total} item${total === 1 ? "" : "s"}`}
-          className="mb-4 w-full rounded-xl border border-stone-200 bg-white px-4 py-2.5 text-base"
+        <PantryControls
+          query={query}
+          onChange={setQuery}
+          categories={allCategories}
+          total={total}
+          counts={counts}
         />
       )}
 
@@ -84,15 +105,32 @@ export function PantryPage() {
       )}
 
       {total > 0 && groups.length === 0 && (
-        <p className="text-center text-stone-500">No items match "{search}".</p>
+        <div className="mt-10 text-center text-stone-500">
+          <p>No items match these filters.</p>
+          <button
+            type="button"
+            onClick={() => setQuery({ ...DEFAULT_VIEW, sort: view.sort, search: "" })}
+            className="mt-2 font-medium text-emerald-700"
+          >
+            Clear filters
+          </button>
+        </div>
+      )}
+
+      {filtered && groups.length > 0 && (
+        <p className="mb-3 text-sm text-stone-500">
+          Showing {groups.reduce((n, g) => n + g.items.length, 0)} of {total}
+        </p>
       )}
 
       <div className="space-y-6">
         {groups.map((group) => (
           <section key={group.key}>
-            <h2 className="mb-2 text-sm font-semibold tracking-wide text-stone-500 uppercase">
-              {group.name} <span className="font-normal">· {group.items.length}</span>
-            </h2>
+            {group.name !== null && (
+              <h2 className="mb-2 text-sm font-semibold tracking-wide text-stone-500 uppercase">
+                {group.name} <span className="font-normal">· {group.items.length}</span>
+              </h2>
+            )}
             <ul className="space-y-2">
               {group.items.map((item) => (
                 <ItemCard key={item.id} item={item} onEdit={() => setSheet({ kind: "edit", item })} />

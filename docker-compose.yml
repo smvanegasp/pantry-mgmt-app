@@ -16,6 +16,8 @@ services:
       # DynamoDB Local accepts any credentials.
       AWS_ACCESS_KEY_ID: local
       AWS_SECRET_ACCESS_KEY: local
+      # Docker on Windows doesn't forward file-change events; poll for --reload.
+      WATCHFILES_FORCE_POLLING: "true"
     command: uvicorn app.main:app --host 0.0.0.0 --port 8080 --reload
     depends_on:
       - dynamodb
@@ -38,6 +40,7 @@ services:
       - web_node_modules:/web/node_modules
     environment:
       API_URL: http://api:8080
+      VITE_USE_POLLING: "1"
     ports:
       - "5173:5173"
     command: sh -c "npm ci && npm run dev"
