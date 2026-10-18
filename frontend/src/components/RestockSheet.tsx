@@ -104,7 +104,7 @@ export function RestockSheet({ entries, itemsById, categories, onClose }: Props)
               Each item you bought becomes a new package in your pantry. Add an expiration date if
               you like, or skip it.
             </p>
-            <InfoTip title="Putting groceries away" align="right">
+            <InfoTip title="Putting groceries away">
               For <b>how full</b> items, the quantity is how many new full packages you bought.
               For <b>how many</b> items, it's how many you bought (they're added as one batch).
               Anything you didn't find goes back on the list.

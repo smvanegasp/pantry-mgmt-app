@@ -1,3 +1,4 @@
+import { SignOut } from "@phosphor-icons/react";
 import { useState, type FormEvent } from "react";
 
 import type { Category } from "../api";
@@ -7,7 +8,9 @@ import {
   useCategories,
   useCreateCategory,
   useDeleteCategory,
+  useLogout,
   useRenameCategory,
+  useSession,
   useSettings,
   useUpdateSettings,
 } from "../hooks";
@@ -113,7 +116,34 @@ export function SettingsPage() {
     <div className="space-y-4 pb-24">
       <ThresholdSettings />
       <CategorySettings />
+      <AccountSettings />
     </div>
+  );
+}
+
+function AccountSettings() {
+  const session = useSession().data;
+  const logout = useLogout();
+  const owner = session?.role === "owner";
+
+  return (
+    <section className="rounded-xl border border-stone-200 bg-white p-4">
+      <h2 className="text-lg font-semibold">Account</h2>
+      <p className="mb-3 text-sm text-stone-500">
+        {owner
+          ? "You're signed in to the real pantry on this device."
+          : "You're trying a private demo. Leaving it takes you back to the welcome screen."}
+      </p>
+      <button
+        type="button"
+        onClick={() => logout.mutate()}
+        disabled={logout.isPending}
+        className="inline-flex items-center gap-2 rounded-lg border border-stone-300 px-4 py-2 font-medium text-stone-700"
+      >
+        <SignOut size={18} weight="fill" aria-hidden />
+        {owner ? "Log out" : "Leave demo"}
+      </button>
+    </section>
   );
 }
 

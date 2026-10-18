@@ -6,6 +6,7 @@ requires-python = ">=3.12,<3.13"
 dependencies = [
     "boto3>=1.43.114",
     "fastapi>=0.115",
+    "itsdangerous>=2.2.0",
     "uvicorn[standard]>=0.30",
 ]
 

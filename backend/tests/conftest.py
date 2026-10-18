@@ -6,6 +6,10 @@ from moto import mock_aws
 
 from app import db
 from app.main import app
+from app.passcode import hash_passcode
+
+OWNER_PASSCODE = "4821"
+_HASH = hash_passcode(OWNER_PASSCODE)
 
 
 @pytest.fixture(autouse=True)
@@ -16,6 +20,9 @@ def aws():
         AWS_SECRET_ACCESS_KEY="test",
         AWS_REGION="us-east-1",
         TABLE_NAME="pantry-test",
+        SESSION_SECRET="test-secret",
+        PASSCODE_HASH=_HASH,
+        COOKIE_SECURE="0",
     )
     os.environ.pop("DYNAMODB_ENDPOINT", None)
     with mock_aws():
@@ -26,5 +33,22 @@ def aws():
 
 
 @pytest.fixture
-def client() -> TestClient:
+def anon() -> TestClient:
+    """A visitor with no session yet."""
     return TestClient(app)
+
+
+@pytest.fixture
+def client() -> TestClient:
+    """Logged in as the owner, working on the real pantry."""
+    c = TestClient(app)
+    assert c.post("/api/session/owner", json={"passcode": OWNER_PASSCODE}).status_code == 200
+    return c
+
+
+@pytest.fixture
+def guest() -> TestClient:
+    """A visitor in their own demo sandbox."""
+    c = TestClient(app)
+    assert c.post("/api/session/guest").status_code == 200
+    return c

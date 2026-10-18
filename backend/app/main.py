@@ -4,7 +4,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from app import db
-from app.routers import categories, grocery_list, items, settings
+from app.routers import categories, grocery_list, items, session, settings
 
 
 @asynccontextmanager
@@ -20,6 +20,7 @@ app = FastAPI(
     openapi_url="/api/openapi.json",
     lifespan=lifespan,
 )
+app.include_router(session.router)
 app.include_router(categories.router)
 app.include_router(items.router)
 app.include_router(settings.router)

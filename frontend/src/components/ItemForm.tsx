@@ -251,7 +251,7 @@ export function ItemForm({
           >
             <Plus size={16} weight="bold" aria-hidden /> Add another package
           </button>
-          <InfoTip title="Packages" align="right">
+          <InfoTip title="Packages">
             Have an open bag and a spare, or cans that expire on different dates? Add each as a
             package. The grocery list looks at the <b>total</b>, and the quick buttons on the
             pantry card change the open (or first-to-expire) package.
@@ -274,7 +274,7 @@ export function ItemForm({
             )}
             Add to grocery list when…
           </button>
-          <InfoTip title="Add to list when" align="right">
+          <InfoTip title="Add to list when">
             "Generate list" adds this item once its total drops to this point. Leave it on Default
             to use the pantry-wide setting from Settings.
           </InfoTip>

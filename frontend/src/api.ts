@@ -53,12 +53,25 @@ export interface RestockInput {
   newItem?: { name: string; categoryId: string | null; mode: Mode };
 }
 
+export interface SessionInfo {
+  role: "owner" | "guest" | null;
+  /** Unix seconds when a guest sandbox expires. */
+  expiresAt: number | null;
+  ownerLoginEnabled: boolean;
+}
+
+/** Fired when the API says the session is gone (e.g. the 24h demo expired). */
+export const SESSION_EXPIRED = "pantry:session-expired";
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`/api${path}`, {
     ...init,
     headers: { "Content-Type": "application/json", ...init?.headers },
   });
   if (!res.ok) {
+    if (res.status === 401 && !path.startsWith("/session")) {
+      window.dispatchEvent(new Event(SESSION_EXPIRED));
+    }
     let message = res.statusText;
     try {
       const body = await res.json();
@@ -77,6 +90,13 @@ const json = (method: string, body: unknown): RequestInit => ({
 });
 
 export const api = {
+  getSession: () => request<SessionInfo>("/session"),
+  startGuest: () => request<SessionInfo>("/session/guest", { method: "POST" }),
+  resetGuest: () => request<SessionInfo>("/session/guest/reset", { method: "POST" }),
+  ownerLogin: (passcode: string) =>
+    request<SessionInfo>("/session/owner", json("POST", { passcode })),
+  logout: () => request<SessionInfo>("/session", { method: "DELETE" }),
+
   listItems: () => request<Item[]>("/items"),
   createItem: (item: ItemInput) => request<Item>("/items", json("POST", item)),
   updateItem: (id: string, patch: Partial<ItemInput>) =>
