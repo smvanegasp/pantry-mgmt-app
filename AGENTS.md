@@ -52,10 +52,13 @@ taps when you get home. Photos of products are read by an AI model to fill items
 | 5a | Product photos (resized on device, S3), thumbnails, viewer, camera-first button | #7 |
 | 5b | Photo recognition (Groq; OpenAI/Gemini supported), focus/zoom fixes after the camera | #8 |
 | 5c | "Stock your pantry": in-app camera, background reading, swipe review, fix list; one camera button + menu; foldable sections; dark mode; delete/discard photos | #9 |
-| **6** | **Deploy to AWS with Terraform. In progress: infra code written and validated, not yet applied (branch `stage-6-aws`).** | |
+| 6 | AWS with Terraform: CloudFront, Lambda (image), HTTP API, DynamoDB, S3, SSM secrets; deploy script | #11 |
+| **6b** | **Deploy from GitHub Actions on merge to `main` (OIDC). Next up.** | |
 | 7 | Polish, domain, extras. See the backlog | |
 
-All features are built and tested locally. Nothing is deployed yet.
+**Live at <https://d3bg4vze5d4ttm.cloudfront.net>** (deployed 2026-10-19; Sergio passed the
+phone gate). Her real pantry there started empty. Local (Docker + ngrok) stays the place to
+test changes before they're merged; she should only use the AWS link.
 
 ## 4. Architecture
 
