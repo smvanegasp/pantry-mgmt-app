@@ -1,6 +1,9 @@
-"""Read a product photo into pantry-item fields with a multimodal model (Gemini).
+"""Read a product photo into pantry-item fields with a multimodal model.
 
-`call_model` is the only provider-specific part; swapping to another model means changing it.
+Two providers, picked by which key is configured (OpenAI first):
+- OpenAI (OPENAI_API_KEY, OPENAI_MODEL), Responses API with strict Structured Outputs
+- Gemini (GEMINI_API_KEY, GEMINI_MODEL), generateContent with a JSON schema
+`call_model` is the only provider-specific entry point.
 """
 
 import base64
@@ -12,7 +15,8 @@ from typing import Literal
 import httpx
 from pydantic import BaseModel, ValidationError
 
-DEFAULT_MODEL = "gemini-3.8-flash"
+DEFAULT_OPENAI_MODEL = "gpt-6-luna"
+DEFAULT_GEMINI_MODEL = "gemini-3.8-flash"
 TIMEOUT_SECONDS = 30
 
 
@@ -33,6 +37,7 @@ class ModelAnswer(BaseModel):
     expiresOn: date | None
 
 
+# Strict-mode friendly: every field required, nullability via type arrays, no extra keys.
 SCHEMA = {
     "type": "object",
     "properties": {
@@ -53,9 +58,13 @@ SCHEMA = {
             "type": ["integer", "null"],
             "description": "For mode=count: how many units are visible, or null if unclear.",
         },
-        "expiresOn": {"type": ["string", "null"], "format": "date"},
+        "expiresOn": {
+            "type": ["string", "null"],
+            "description": "Printed expiration date as YYYY-MM-DD, or null.",
+        },
     },
     "required": ["isProduct", "name", "categoryName", "mode", "count", "expiresOn"],
+    "additionalProperties": False,
 }
 
 
@@ -77,12 +86,42 @@ Return:
 - isProduct: false if this isn't a pantry product (a person, a room, a blank photo)."""
 
 
-def call_model(image: bytes, mime_type: str, prompt: str) -> dict:
-    """One structured generateContent call; returns the parsed JSON answer."""
-    key = os.environ.get("GEMINI_API_KEY")
-    if not key:
-        raise RecognitionUnavailable()
-    model = os.environ.get("GEMINI_MODEL", DEFAULT_MODEL)
+def _openai(key: str, image: bytes, mime_type: str, prompt: str) -> str:
+    data_url = f"data:{mime_type};base64,{base64.b64encode(image).decode()}"
+    body = {
+        "model": os.environ.get("OPENAI_MODEL", DEFAULT_OPENAI_MODEL),
+        "input": [
+            {
+                "role": "user",
+                "content": [
+                    {"type": "input_text", "text": prompt},
+                    {"type": "input_image", "image_url": data_url},
+                ],
+            }
+        ],
+        # Reading a label needs little reasoning; low effort keeps it fast and cheap.
+        "reasoning": {"effort": os.environ.get("OPENAI_REASONING_EFFORT", "low")},
+        "text": {
+            "format": {"type": "json_schema", "name": "pantry_item", "schema": SCHEMA, "strict": True}
+        },
+    }
+    response = httpx.post(
+        "https://api.openai.com/v1/responses",
+        headers={"Authorization": f"Bearer {key}"},
+        json=body,
+        timeout=TIMEOUT_SECONDS,
+    )
+    response.raise_for_status()
+    for item in response.json()["output"]:
+        if item.get("type") == "message":
+            for part in item["content"]:
+                if part.get("type") == "output_text":
+                    return part["text"]
+    raise ValueError("no output text")
+
+
+def _gemini(key: str, image: bytes, mime_type: str, prompt: str) -> str:
+    model = os.environ.get("GEMINI_MODEL", DEFAULT_GEMINI_MODEL)
     body = {
         "contents": [
             {
@@ -94,16 +133,26 @@ def call_model(image: bytes, mime_type: str, prompt: str) -> dict:
         ],
         "generationConfig": {"responseMimeType": "application/json", "responseJsonSchema": SCHEMA},
     }
+    response = httpx.post(
+        f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent",
+        headers={"x-goog-api-key": key},
+        json=body,
+        timeout=TIMEOUT_SECONDS,
+    )
+    response.raise_for_status()
+    return response.json()["candidates"][0]["content"]["parts"][0]["text"]
+
+
+def call_model(image: bytes, mime_type: str, prompt: str) -> dict:
+    """One structured call to whichever provider is configured; returns the parsed JSON."""
+    if key := os.environ.get("OPENAI_API_KEY"):
+        provider = _openai
+    elif key := os.environ.get("GEMINI_API_KEY"):
+        provider = _gemini
+    else:
+        raise RecognitionUnavailable()
     try:
-        response = httpx.post(
-            f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent",
-            headers={"x-goog-api-key": key},
-            json=body,
-            timeout=TIMEOUT_SECONDS,
-        )
-        response.raise_for_status()
-        text = response.json()["candidates"][0]["content"]["parts"][0]["text"]
-        return json.loads(text)
+        return json.loads(provider(key, image, mime_type, prompt))
     except (httpx.HTTPError, KeyError, IndexError, ValueError) as err:
         # Never include the request (it carries the key) in errors or logs.
         status_code = getattr(getattr(err, "response", None), "status_code", None)

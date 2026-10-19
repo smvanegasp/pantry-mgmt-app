@@ -43,12 +43,11 @@ itself is never stored.
 ## Photo recognition (local)
 
 Taking a photo of a new item fills in its name, category, tracking mode and printed expiry
-date using Gemini. Add your key to `backend/.env` (git-ignored), then `docker compose up -d api`:
+date. Add one provider's key to `backend/.env` (git-ignored), then `docker compose up -d api`:
 
 ```sh
-GEMINI_API_KEY='...'
-# optional, defaults to gemini-3.8-flash
-GEMINI_MODEL='gemini-3.8-flash'
+OPENAI_API_KEY='sk-...'        # used first; model defaults to gpt-6-luna (OPENAI_MODEL)
+GEMINI_API_KEY='...'           # used if there's no OpenAI key; gemini-3.8-flash (GEMINI_MODEL)
 ```
 
 Daily caps per demo, for the owner, and overall keep costs bounded (`app/routers/recognition.py`).

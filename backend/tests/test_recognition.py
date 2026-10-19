@@ -1,3 +1,5 @@
+import json
+
 import httpx
 import pytest
 
@@ -75,17 +77,75 @@ def test_missing_key_is_a_503(client, monkeypatch):
     assert client.post("/api/recognize", json={"photoKey": photo(client)}).status_code == 503
 
 
-def test_provider_errors_are_502_and_never_leak_the_key(client, monkeypatch):
-    monkeypatch.setenv("GEMINI_API_KEY", "secret-key-123")
+@pytest.mark.parametrize("key_var", ["OPENAI_API_KEY", "GEMINI_API_KEY"])
+def test_provider_errors_are_502_and_never_leak_the_key(client, monkeypatch, key_var):
+    monkeypatch.setenv(key_var, "secret-key-123")
 
-    def fail(*args, **kwargs):
-        request = httpx.Request("POST", "https://example.test", headers={"x-goog-api-key": "secret-key-123"})
+    def fail(url, headers, **kwargs):
+        request = httpx.Request("POST", url, headers=headers)
         raise httpx.HTTPStatusError("402", request=request, response=httpx.Response(402, request=request))
 
     monkeypatch.setattr(recognize.httpx, "post", fail)
     response = client.post("/api/recognize", json={"photoKey": photo(client)})
     assert response.status_code == 502
     assert "secret-key-123" not in response.text
+
+
+def fake_post(payload):
+    """Stand-in for httpx.post that records the request and returns `payload`."""
+    sent = {}
+
+    def post(url, headers, json, timeout):
+        sent.update(url=url, headers=headers, body=json)
+        return httpx.Response(200, json=payload, request=httpx.Request("POST", url))
+
+    post.sent = sent
+    return post
+
+
+ANSWER = {
+    "isProduct": True,
+    "name": "Barilla spaghetti",
+    "categoryName": None,
+    "mode": "count",
+    "count": 1,
+    "expiresOn": "2028-09-30",
+}
+
+
+def test_openai_request_and_response_shape(client, monkeypatch):
+    monkeypatch.setenv("OPENAI_API_KEY", "sk-test")
+    monkeypatch.setenv("GEMINI_API_KEY", "ignored-when-openai-is-set")
+    post = fake_post(
+        {
+            "output": [
+                {"type": "reasoning", "summary": []},
+                {"type": "message", "content": [{"type": "output_text", "text": json.dumps(ANSWER)}]},
+            ]
+        }
+    )
+    monkeypatch.setattr(recognize.httpx, "post", post)
+
+    result = client.post("/api/recognize", json={"photoKey": photo(client)}).json()
+
+    assert result["name"] == "Barilla spaghetti"
+    assert post.sent["url"] == "https://api.openai.com/v1/responses"
+    assert post.sent["headers"] == {"Authorization": "Bearer sk-test"}
+    body = post.sent["body"]
+    assert body["model"] == "gpt-6-luna"
+    assert body["text"]["format"]["strict"] is True
+    image = body["input"][0]["content"][1]
+    assert image["type"] == "input_image"
+    assert image["image_url"].startswith("data:image/jpeg;base64,")
+
+
+def test_gemini_is_used_when_only_its_key_is_set(client, monkeypatch):
+    monkeypatch.setenv("GEMINI_API_KEY", "g-test")
+    post = fake_post({"candidates": [{"content": {"parts": [{"text": json.dumps(ANSWER)}]}}]})
+    monkeypatch.setattr(recognize.httpx, "post", post)
+
+    assert client.post("/api/recognize", json={"photoKey": photo(client)}).status_code == 200
+    assert "generativelanguage.googleapis.com" in post.sent["url"]
 
 
 def test_photo_must_exist_and_be_readable(client, guest, model):
