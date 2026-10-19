@@ -18,7 +18,7 @@ export function storedTheme(): Theme {
 export function applyTheme(theme: Theme) {
   const dark = theme === "dark" || (theme === "system" && darkQuery().matches);
   document.documentElement.classList.toggle("dark", dark);
-  document.querySelector('meta[name="theme-color"]')?.setAttribute("content", dark ? "#0c0a09" : "#fafaf9");
+  document.querySelector('meta[name="theme-color"]')?.setAttribute("content", dark ? "#0a0a0a" : "#fafaf9");
 }
 
 /** On "Automatic", follow the phone switching between light and dark while the app is open. */

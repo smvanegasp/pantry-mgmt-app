@@ -125,3 +125,23 @@ def test_guest_photo_uploads_are_capped(guest):
 
 def test_missing_photo_is_404(client):
     assert client.get(f"/api/photos/main/{'0' * 32}").status_code == 404
+
+
+def test_discard_an_unused_photo(client):
+    key = upload(client).json()["photoKey"]
+    assert client.delete(f"/api/photos/{key}").status_code == 204
+    assert not stored(key)
+    assert client.get(f"/api/photos/{key}").status_code == 404
+
+
+def test_cannot_discard_a_photo_an_item_uses(client):
+    key = upload(client).json()["photoKey"]
+    client.post("/api/items", json={"name": "Honey", "photoKey": key})
+    assert client.delete(f"/api/photos/{key}").status_code == 409
+    assert stored(key)
+
+
+def test_guest_cannot_discard_owner_photos(client, guest):
+    key = upload(client).json()["photoKey"]
+    assert guest.delete(f"/api/photos/{key}").status_code == 404
+    assert stored(key)

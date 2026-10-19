@@ -19,23 +19,24 @@ body {
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 }
 
-/* Dark mode: the palette is mirrored (50 <-> 950, 100 <-> 900, ...), so every screen that uses
-   these colors flips automatically. Surfaces that are white in light mode become stone-800.
-   Generated from tailwindcss/theme.css; the "dark" class is set from Settings > Appearance. */
+/* Dark mode: colors are mirrored (50 <-> 950, 100 <-> 900, ...), so every screen flips
+   automatically. Grays come from Tailwind's neutral palette (true black and charcoal), with a few
+   adjusted steps noted below. Generated from tailwindcss/theme.css; the "dark" class is set from
+   Settings > Appearance. */
 :root.dark {
   color-scheme: dark;
-  --color-stone-50: oklch(14.7% 0.004 49.25);
-  --color-stone-100: oklch(21.6% 0.006 56.043);
-  /* Borders: lighter than the stone-800 surfaces so cards and buttons keep their edges. */
-  --color-stone-200: oklch(37.4% 0.01 67.558);
-  --color-stone-300: oklch(37.4% 0.01 67.558);
-  --color-stone-400: oklch(44.4% 0.011 73.639);
-  --color-stone-500: oklch(55.3% 0.013 58.071);
-  --color-stone-600: oklch(70.9% 0.01 56.259);
-  --color-stone-700: oklch(86.9% 0.005 56.366);
-  --color-stone-800: oklch(92.3% 0.003 48.717);
-  --color-stone-900: oklch(97% 0.001 106.424);
-  --color-stone-950: oklch(98.5% 0.001 106.423);
+  --color-stone-50: oklch(14.5% 0 none);
+  --color-stone-100: oklch(20.5% 0 none);
+  /* Borders: lighter than the surfaces so cards and buttons keep their edges. */
+  --color-stone-200: oklch(37.1% 0 none);
+  --color-stone-300: oklch(37.1% 0 none);
+  --color-stone-400: oklch(43.9% 0 none);
+  --color-stone-500: oklch(55.6% 0 none);
+  --color-stone-600: oklch(70.8% 0 none);
+  --color-stone-700: oklch(87% 0 none);
+  --color-stone-800: oklch(92.2% 0 none);
+  --color-stone-900: oklch(97% 0 none);
+  --color-stone-950: oklch(98.5% 0 none);
   --color-emerald-50: oklch(26.2% 0.051 172.552);
   --color-emerald-100: oklch(37.8% 0.077 168.94);
   --color-emerald-200: oklch(43.2% 0.095 166.913);
@@ -81,6 +82,6 @@ body {
   --color-red-800: oklch(88.5% 0.062 18.334);
   --color-red-900: oklch(93.6% 0.032 17.717);
   --color-red-950: oklch(97.1% 0.013 17.38);
-  /* Cards and selected toggles: a step above the mirrored stone-100 track (stone-900). */
-  --color-white: oklch(26.8% 0.007 34.298);
+  /* Cards and selected toggles: a step above the mirrored stone-100 track. */
+  --color-white: oklch(26.9% 0 none);
 }

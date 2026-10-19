@@ -1,11 +1,35 @@
-import { Camera, Images } from "@phosphor-icons/react";
+import { Camera, Images, Trash } from "@phosphor-icons/react";
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 
 import type { Shot } from "../lib/useShotQueue";
 
 interface Props {
   shots: Shot[];
   onShot: (photo: Blob) => void;
+  onRemove: (id: string) => void;
+}
+
+/** A taken photo shown large, so a bad shot can be deleted. */
+function ShotPreview({ shot, onDelete, onClose }: { shot: Shot; onDelete: () => void; onClose: () => void }) {
+  return createPortal(
+    <div role="dialog" aria-modal="true" aria-label="Photo" className="fixed inset-0 z-50 flex flex-col bg-black/95 p-4">
+      <img src={shot.previewUrl} alt="" className="min-h-0 flex-1 rounded-lg object-contain" />
+      <div className="mt-4 grid grid-cols-2 gap-3 pb-[env(safe-area-inset-bottom)]">
+        <button type="button" onClick={onClose} className="rounded-xl bg-white/15 py-3 font-semibold text-white">
+          Keep
+        </button>
+        <button
+          type="button"
+          onClick={onDelete}
+          className="inline-flex items-center justify-center gap-2 rounded-xl bg-red-600 py-3 font-semibold text-white"
+        >
+          <Trash size={18} weight="fill" aria-hidden /> Delete photo
+        </button>
+      </div>
+    </div>,
+    document.body,
+  );
 }
 
 type CameraState = "starting" | "live" | "unavailable";
@@ -14,7 +38,8 @@ type CameraState = "starting" | "live" | "unavailable";
  * In-app camera for taking many photos in a row (no system camera screen between shots).
  * Falls back to picking photos when the camera isn't available (desktop, permission denied).
  */
-export function CameraCapture({ shots, onShot }: Props) {
+export function CameraCapture({ shots, onShot, onRemove }: Props) {
+  const [previewing, setPreviewing] = useState<Shot | null>(null);
   const video = useRef<HTMLVideoElement>(null);
   const picker = useRef<HTMLInputElement>(null);
   const [state, setState] = useState<CameraState>("starting");
@@ -92,15 +117,34 @@ export function CameraCapture({ shots, onShot }: Props) {
       {shots.length > 0 && (
         <ul className="mt-3 flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none]" aria-label="Photos taken">
           {shots.map((s) => (
-            <li key={s.id} className="relative h-14 w-14 shrink-0 overflow-hidden rounded-lg bg-stone-200">
-              <img src={s.previewUrl} alt="" className="h-full w-full object-cover" />
-              {s.status !== "ready" && s.status !== "failed" && (
-                <span className="absolute inset-0 bg-white/40" aria-hidden />
-              )}
+            <li key={s.id} className="shrink-0">
+              <button
+                type="button"
+                onClick={() => setPreviewing(s)}
+                aria-label="View or delete photo"
+                className="relative block h-14 w-14 overflow-hidden rounded-lg bg-stone-200"
+              >
+                <img src={s.previewUrl} alt="" className="h-full w-full object-cover" />
+                {s.status !== "ready" && s.status !== "failed" && (
+                  <span className="absolute inset-0 bg-white/40" aria-hidden />
+                )}
+              </button>
             </li>
           ))}
         </ul>
       )}
+
+      {previewing && (
+        <ShotPreview
+          shot={previewing}
+          onClose={() => setPreviewing(null)}
+          onDelete={() => {
+            onRemove(previewing.id);
+            setPreviewing(null);
+          }}
+        />
+      )}
+      {shots.length > 0 && <p className="mt-1 text-xs text-stone-500">Tap a photo to see it or delete it.</p>}
 
       <input
         ref={picker}

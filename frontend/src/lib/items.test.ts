@@ -119,7 +119,8 @@ describe("groupItems", () => {
   });
 
   it("sorts flat lists", () => {
-    const flat = (sort: Parameters<typeof groupItems>[2]) => names(groupItems(items, cats, sort)[0].items);
+    const flat = (sort: Parameters<typeof groupItems>[2]) =>
+      names(groupItems(items, cats, sort, undefined, today).flatMap((g) => g.items));
     expect(flat("name")).toEqual(["Beans", "Brown rice", "Eggs", "Milk", "Salt"]);
     expect(flat("expiry")).toEqual(["Milk", "Eggs", "Beans", "Brown rice", "Salt"]);
     expect(flat("stock")).toEqual(["Beans", "Milk", "Salt", "Brown rice", "Eggs"]);
@@ -128,5 +129,68 @@ describe("groupItems", () => {
 
   it("returns no groups for no items", () => {
     expect(groupItems([], cats, "name")).toEqual([]);
+  });
+});
+
+describe("sections for time and stock sorts", () => {
+  const sections = (sort: Parameters<typeof groupItems>[2], list: Item[]) =>
+    groupItems(list, cats, sort, undefined, today).map((g) => [g.name, names(g.items)]);
+
+  it("groups by when things expire", () => {
+    const list = [
+      item({ name: "Old", expiresOn: "2026-10-10" }),
+      item({ name: "Week", expiresOn: "2026-10-24" }),
+      item({ name: "Month", expiresOn: "2026-11-10" }),
+      item({ name: "Quarter", expiresOn: "2027-01-10" }),
+      item({ name: "Later", expiresOn: "2027-06-01" }),
+      item({ name: "Undated" }),
+    ];
+    expect(sections("expiry", list)).toEqual([
+      ["Expired", ["Old"]],
+      ["Next week", ["Week"]],
+      ["Next month", ["Month"]],
+      ["Next 3 months", ["Quarter"]],
+      ["Later", ["Later"]],
+      ["No expiration date", ["Undated"]],
+    ]);
+  });
+
+  it("groups by how much is left, across level and count items", () => {
+    const list = [
+      item({ name: "Gone", level: 0 }),
+      item({ name: "Quarter", level: 25 }),
+      item({ name: "Half", level: 50 }),
+      item({ name: "Full", level: 100 }),
+      item({ name: "One can", mode: "count", count: 1 }),
+      item({ name: "Three cans", mode: "count", count: 3 }),
+      item({ name: "Six cans", mode: "count", count: 6 }),
+    ];
+    expect(sections("stock", list)).toEqual([
+      ["Empty", ["Gone"]],
+      ["Running low", ["One can", "Quarter"]],
+      ["About half or 2–3 left", ["Half", "Three cans"]],
+      ["Plenty", ["Full", "Six cans"]],
+    ]);
+  });
+
+  it("groups by when they were last updated", () => {
+    const at = (d: string) => new Date(`${d}T12:00:00`).toISOString();
+    const list = [
+      item({ name: "Now", updatedAt: at("2026-10-18") }),
+      item({ name: "Days", updatedAt: at("2026-10-14") }),
+      item({ name: "Weeks", updatedAt: at("2026-09-30") }),
+      item({ name: "Ages", updatedAt: at("2026-05-01") }),
+    ];
+    expect(sections("updated", list)).toEqual([
+      ["Today", ["Now"]],
+      ["Last week", ["Days"]],
+      ["Last month", ["Weeks"]],
+      ["Older", ["Ages"]],
+    ]);
+  });
+
+  it("keeps name sorting as one flat list", () => {
+    expect(groupItems(items, cats, "name")).toHaveLength(1);
+    expect(groupItems(items, cats, "name")[0].name).toBeNull();
   });
 });

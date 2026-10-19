@@ -1,4 +1,4 @@
-import { ArrowCounterClockwise, CheckCircle, Clock, PencilSimple, Sparkle, X } from "@phosphor-icons/react";
+import { ArrowCounterClockwise, CheckCircle, Clock, PencilSimple, Sparkle, Trash, X } from "@phosphor-icons/react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
@@ -68,7 +68,7 @@ function CardContent({ shot, existing, categories }: { shot: Shot; existing?: It
 
 /** Full-screen "Stock your pantry": snap many photos, swipe to accept, fix the rest. */
 export function StockUpSheet({ onClose }: { onClose: () => void }) {
-  const { shots, add } = useShotQueue();
+  const { shots, add, remove } = useShotQueue();
   const items = useItems().data ?? [];
   const categories = useCategories().data ?? [];
   const qc = useQueryClient();
@@ -76,6 +76,7 @@ export function StockUpSheet({ onClose }: { onClose: () => void }) {
   const [index, setIndex] = useState(0);
   const [outcomes, setOutcomes] = useState<Record<string, Outcome>>({});
   const [fixed, setFixed] = useState<Set<string>>(new Set());
+  const [skipped, setSkipped] = useState<Set<string>>(new Set());
   const [fixing, setFixing] = useState<Shot | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -166,11 +167,13 @@ export function StockUpSheet({ onClose }: { onClose: () => void }) {
   }
 
   const reviewed = Object.keys(outcomes).length;
-  const toFix = shots.filter((s) => outcomes[s.id]?.kind === "rejected" && !fixed.has(s.id));
+  const toFix = shots.filter((s) => outcomes[s.id]?.kind === "rejected" && !fixed.has(s.id) && !skipped.has(s.id));
   const added = shots.filter((s) => outcomes[s.id] && outcomes[s.id].kind !== "rejected").length + fixed.size;
 
   // Move on once every photo has been reviewed.
   useEffect(() => {
+    // Every photo was discarded: back to the camera.
+    if (step === "review" && shots.length === 0) setStep("capture");
     if (step === "review" && shots.length > 0 && index >= shots.length) setStep(toFix.length ? "fix" : "done");
     if (step === "fix" && toFix.length === 0) setStep("done");
   }, [step, index, shots.length, toFix.length]);
@@ -207,7 +210,7 @@ export function StockUpSheet({ onClose }: { onClose: () => void }) {
         {step === "capture" && (
           <>
             <div className="min-h-0 flex-1">
-              <CameraCapture shots={shots} onShot={add} />
+              <CameraCapture shots={shots} onShot={add} onRemove={remove} />
             </div>
             <button
               type="button"
@@ -243,6 +246,14 @@ export function StockUpSheet({ onClose }: { onClose: () => void }) {
               >
                 <ArrowCounterClockwise size={16} weight="bold" aria-hidden /> Undo
               </button>
+              <button
+                type="button"
+                onClick={() => remove(top.id)}
+                disabled={saving}
+                className="inline-flex items-center gap-1 px-2 py-2 text-red-600 disabled:opacity-40"
+              >
+                <Trash size={16} weight="fill" aria-hidden /> Discard photo
+              </button>
               <button type="button" onClick={() => setStep("capture")} className="px-2 py-2 text-stone-600">
                 Take more photos
               </button>
@@ -263,7 +274,10 @@ export function StockUpSheet({ onClose }: { onClose: () => void }) {
                   </button>
                   <button
                     type="button"
-                    onClick={() => setFixed((f) => new Set(f).add(shot.id))}
+                    onClick={() => {
+                      setSkipped((s) => new Set(s).add(shot.id));
+                      if (shot.photoKey) void api.discardPhoto(shot.photoKey).catch(() => {});
+                    }}
                     className="px-2 py-2 text-sm text-stone-500"
                   >
                     Skip

@@ -1,5 +1,5 @@
 import type { Category, Item, Settings } from "../api";
-import { daysUntil, SOON_DAYS } from "./dates";
+import { daysUntil, SOON_DAYS, toISODate } from "./dates";
 import { earliestExpiry, totalStock } from "./packages";
 import { fuzzyMatch } from "./search";
 
@@ -26,10 +26,10 @@ export type SortKey = "category" | "name" | "expiry" | "stock" | "updated";
 
 export const SORT_OPTIONS: { value: SortKey; label: string }[] = [
   { value: "category", label: "By category" },
-  { value: "name", label: "Name (A–Z)" },
   { value: "expiry", label: "Expires soonest" },
   { value: "stock", label: "Lowest stock" },
   { value: "updated", label: "Recently updated" },
+  { value: "name", label: "Name (A–Z)" },
 ];
 
 export interface ItemQuery {
@@ -109,15 +109,65 @@ export function groupByCategory<T>(
   return groups;
 }
 
+/** Which section an item falls in for the sorts that group into time or stock ranges. */
+type Bucketer = (item: Item, settings: Settings, today: Date) => string;
+
+const BUCKETS: Partial<Record<SortKey, { order: string[]; of: Bucketer }>> = {
+  expiry: {
+    order: ["Expired", "Next week", "Next month", "Next 3 months", "Later", "No expiration date"],
+    of: (item, _settings, today) => {
+      const expiry = earliestExpiry(item);
+      if (expiry === null) return "No expiration date";
+      const days = daysUntil(expiry, today);
+      if (days < 0) return "Expired";
+      if (days <= 7) return "Next week";
+      if (days <= 31) return "Next month";
+      if (days <= 92) return "Next 3 months";
+      return "Later";
+    },
+  },
+  stock: {
+    order: ["Empty", "Running low", "About half or 2–3 left", "Plenty"],
+    of: (item, settings) => {
+      const total = totalStock(item);
+      if (total === 0) return "Empty";
+      if (isLow(item, settings)) return "Running low";
+      // "How full" items count in percent (two half bags = 100); "how many" in units.
+      const middling = item.mode === "level" ? total <= 50 : total <= 3;
+      return middling ? "About half or 2–3 left" : "Plenty";
+    },
+  },
+  updated: {
+    order: ["Today", "Last week", "Last month", "Older"],
+    of: (item, _settings, today) => {
+      const days = -daysUntil(toISODate(new Date(item.updatedAt)), today);
+      if (days <= 0) return "Today";
+      if (days <= 7) return "Last week";
+      if (days <= 31) return "Last month";
+      return "Older";
+    },
+  },
+};
+
 export function groupItems(
   items: Item[],
   categories: Category[],
   sort: SortKey,
   settings: Settings = DEFAULT_SETTINGS,
+  today: Date = new Date(),
 ): ItemGroup[] {
-  if (sort !== "category") {
-    if (!items.length) return [];
-    return [{ key: "all", name: null, items: [...items].sort(comparator(sort, settings)) }];
+  if (sort === "category") {
+    return groupByCategory([...items].sort(byName), categories, (i) => i.categoryId);
   }
-  return groupByCategory([...items].sort(byName), categories, (i) => i.categoryId);
+  const sorted = [...items].sort(comparator(sort, settings));
+  const buckets = BUCKETS[sort];
+  if (!buckets) return sorted.length ? [{ key: "all", name: null, items: sorted }] : [];
+  // Sections in a fixed order (sorted within), empty ones left out.
+  return buckets.order
+    .map((name) => ({
+      key: `${sort}:${name}`,
+      name,
+      items: sorted.filter((i) => buckets.of(i, settings, today) === name),
+    }))
+    .filter((g) => g.items.length > 0);
 }

@@ -22,6 +22,8 @@ export function useShotQueue() {
   const [shots, setShots] = useState<Shot[]>([]);
   const blobs = useRef(new Map<string, Blob>());
   const started = useRef(new Set<string>());
+  // Shots deleted while still uploading: their photo is discarded once the upload lands.
+  const removed = useRef(new Set<string>());
   const previews = useRef<string[]>([]);
 
   const update = (id: string, patch: Partial<Shot>) =>
@@ -45,6 +47,10 @@ export function useShotQueue() {
       update(id, { status: "uploading" });
       const [full, thumb] = await Promise.all([resizeImage(blob, PHOTO_SIDE), resizeImage(blob, THUMB_SIDE)]);
       const { photoKey } = await api.uploadPhoto(full, thumb);
+      if (removed.current.has(id)) {
+        void api.discardPhoto(photoKey).catch(() => {});
+        return;
+      }
       update(id, { status: "reading", photoKey });
       try {
         update(id, { status: "ready", suggestion: await api.recognize(photoKey) });
@@ -69,5 +75,18 @@ export function useShotQueue() {
     setShots((all) => [...all, { id, previewUrl, status: "waiting", photoKey: null, suggestion: null, error: null }]);
   }, []);
 
-  return { shots, add };
+  /** Take a shot out of the batch and delete its uploaded photo. */
+  const remove = useCallback((id: string) => {
+    removed.current.add(id);
+    blobs.current.delete(id);
+    setShots((all) => {
+      // Read the latest state: the upload may have finished since the user tapped delete.
+      const photoKey = all.find((s) => s.id === id)?.photoKey;
+      // Best effort (and safe to repeat): an unused photo left behind is harmless.
+      if (photoKey) void api.discardPhoto(photoKey).catch(() => {});
+      return all.filter((s) => s.id !== id);
+    });
+  }, []);
+
+  return { shots, add, remove };
 }
