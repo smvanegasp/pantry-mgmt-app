@@ -9,6 +9,7 @@ from app import ratelimit, storage
 from app.models import PhotoKey
 from app.recognize import RecognitionFailed, RecognitionUnavailable, recognize
 from app.routers.categories import list_categories
+from app.routers.items import list_items
 from app.routers.photos import can_read, object_keys
 from app.sandbox import PREFIX
 from app.space import current_space
@@ -35,6 +36,8 @@ class Suggestion(BaseModel):
     categoryId: str | None
     # Set when the model suggests a category that doesn't exist yet.
     newCategoryName: str | None
+    # Set when the model says it's the same product as an item already in the pantry.
+    existingItemId: str | None
     mode: Literal["level", "count"]
     count: int | None
     expiresOn: date | None
@@ -58,9 +61,12 @@ def recognize_photo(body: RecognizeIn, space: str = Depends(current_space)) -> S
     _check_limits(space)
 
     categories = list_categories(space)
+    items = list_items(space)
     image, mime_type = found
     try:
-        answer = recognize(image, mime_type, [c.name for c in categories], date.today())
+        answer = recognize(
+            image, mime_type, [c.name for c in categories], [i.name for i in items], date.today()
+        )
     except RecognitionUnavailable:
         raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "Photo reading isn't set up") from None
     except RecognitionFailed as err:
@@ -70,11 +76,14 @@ def recognize_photo(body: RecognizeIn, space: str = Depends(current_space)) -> S
     by_name = {c.name.strip().lower(): c.id for c in categories}
     suggested = (answer.categoryName or "").strip()
     category_id = by_name.get(suggested.lower())
+    name = (answer.name or "").strip()[:80]
+    existing = next((i for i in items if i.name.strip().lower() == name.lower()), None)
     return Suggestion(
         isProduct=answer.isProduct,
-        name=(answer.name or "").strip()[:80],
+        name=name,
         categoryId=category_id,
         newCategoryName=suggested[:80] if suggested and category_id is None else None,
+        existingItemId=existing.id if existing and answer.isProduct else None,
         mode=answer.mode,
         count=max(1, min(answer.count, 999)) if answer.mode == "count" and answer.count else None,
         expiresOn=answer.expiresOn,

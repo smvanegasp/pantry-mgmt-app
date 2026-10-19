@@ -6,7 +6,7 @@ import { createPortal } from "react-dom";
 import { api, type Category, type Item, type ItemInput, type Package } from "../api";
 import { useCategories, useItems } from "../hooks";
 import { formatExpiry } from "../lib/dates";
-import { draftItem, findCategory, findExisting, packageFrom } from "../lib/stockup";
+import { addTo, draftItem, findCategory, findMatch, packageFrom } from "../lib/stockup";
 import { useShotQueue, type Shot } from "../lib/useShotQueue";
 import { BottomSheet } from "./BottomSheet";
 import { CameraCapture } from "./CameraCapture";
@@ -78,6 +78,8 @@ export function StockUpSheet({ onClose }: { onClose: () => void }) {
   const [fixed, setFixed] = useState<Set<string>>(new Set());
   const [skipped, setSkipped] = useState<Set<string>>(new Set());
   const [fixing, setFixing] = useState<Shot | null>(null);
+  // Photos whose similar-named pantry item the person chose to add to (instead of a new item).
+  const [joinSimilar, setJoinSimilar] = useState<Set<string>>(new Set());
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   // Categories created during this session, so two photos don't create the same one twice.
@@ -105,14 +107,20 @@ export function StockUpSheet({ onClose }: { onClose: () => void }) {
     return created.id;
   }
 
+  const matchOf = (shot: Shot) =>
+    usable(shot) ? findMatch(items, shot.suggestion!.name, shot.suggestion!.existingItemId) : null;
+
+  /** The item this photo will be added to: a sure match, or a similar one the person picked. */
+  function targetOf(shot: Shot): Item | undefined {
+    const match = matchOf(shot);
+    return match && (match.sure || joinSimilar.has(shot.id)) ? match.item : undefined;
+  }
+
   async function accept(shot: Shot): Promise<Outcome> {
     const s = shot.suggestion!;
-    const existing = findExisting(items, s.name);
+    const existing = targetOf(shot);
     if (existing) {
-      await api.updateItem(existing.id, {
-        packages: [...existing.packages, packageFrom(s)],
-        ...(existing.photoKey ? {} : { photoKey: shot.photoKey }),
-      });
+      await api.updateItem(existing.id, addTo(existing, [packageFrom(s)], shot.photoKey));
       return { kind: "packaged", itemId: existing.id, previous: existing.packages };
     }
     const categoryId = s.categoryId ?? (s.newCategoryName ? await categoryIdFor(s.newCategoryName) : null);
@@ -152,10 +160,11 @@ export function StockUpSheet({ onClose }: { onClose: () => void }) {
     }
   }
 
-  async function saveFixed(shot: Shot, input: ItemInput) {
+  async function saveFixed(shot: Shot, input: ItemInput, into?: Item) {
     setSaving(true);
     try {
-      await api.createItem(input);
+      if (into) await api.updateItem(into.id, addTo(into, input.packages, input.photoKey));
+      else await api.createItem(input);
       setFixed((f) => new Set(f).add(shot.id));
       setFixing(null);
       refresh();
@@ -230,13 +239,54 @@ export function StockUpSheet({ onClose }: { onClose: () => void }) {
                 top={{
                   key: top.id,
                   canAccept: usable(top),
-                  content: <CardContent shot={top} existing={top.suggestion ? findExisting(items, top.suggestion.name) : undefined} categories={categories} />,
+                  content: <CardContent shot={top} existing={targetOf(top)} categories={categories} />,
                 }}
                 next={shots[index + 1] ? <CardContent shot={shots[index + 1]} categories={categories} /> : null}
                 busy={saving || (top.status !== "ready" && top.status !== "failed")}
                 onDecide={decide}
               />
             </div>
+            {(() => {
+              // A similar name ("Kirkland black beans" vs "Black beans"): the person decides.
+              const match = matchOf(top);
+              if (!match || match.sure) return null;
+              const join = joinSimilar.has(top.id);
+              const choose = (value: boolean) =>
+                setJoinSimilar((s) => {
+                  const next = new Set(s);
+                  if (value) next.add(top.id);
+                  else next.delete(top.id);
+                  return next;
+                });
+              return (
+                <div className="mt-3 rounded-xl border border-sky-200 bg-sky-50 p-3">
+                  <p className="text-sm text-sky-900">
+                    Looks like <b>{match.item.name}</b> in your pantry. Same product?
+                  </p>
+                  <div className="mt-2 grid grid-cols-2 gap-2" role="radiogroup" aria-label="Same product?">
+                    {[
+                      { value: true, label: `Add to ${match.item.name}` },
+                      { value: false, label: "Keep separate" },
+                    ].map((o) => (
+                      <button
+                        key={String(o.value)}
+                        type="button"
+                        role="radio"
+                        aria-checked={join === o.value}
+                        onClick={() => choose(o.value)}
+                        className={`truncate rounded-lg border px-2 py-2 text-sm font-medium ${
+                          join === o.value
+                            ? "border-sky-600 bg-sky-600 text-white"
+                            : "border-sky-200 bg-white text-sky-800"
+                        }`}
+                      >
+                        {o.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
             <div className="mt-2 flex justify-between text-sm">
               <button
                 type="button"
@@ -310,6 +360,8 @@ export function StockUpSheet({ onClose }: { onClose: () => void }) {
         <BottomSheet title="Fix item" onClose={() => setFixing(null)}>
           <ItemForm
             initial={draftItem(fixing.suggestion, fixing.photoKey, categories)}
+            items={items}
+            onAddTo={(existing, input) => saveFixed(fixing, input, existing)}
             categories={categories}
             submitLabel="Add to pantry"
             submitting={saving}

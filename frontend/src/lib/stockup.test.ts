@@ -1,13 +1,14 @@
 import { describe, expect, it } from "vitest";
 
-import type { Category, Item, Suggestion } from "../api";
-import { draftItem, findCategory, findExisting, packageFrom } from "./stockup";
+import type { Category, Item, Package, Suggestion } from "../api";
+import { addTo, draftItem, findCategory, findExisting, findMatch, packageFrom } from "./stockup";
 
 const suggestion = (s: Partial<Suggestion> = {}): Suggestion => ({
   isProduct: true,
   name: "Barilla spaghetti",
   categoryId: null,
   newCategoryName: null,
+  existingItemId: null,
   mode: "count",
   count: 3,
   expiresOn: "2028-09-30",
@@ -43,6 +44,39 @@ describe("findExisting / findCategory", () => {
     expect(findExisting([item("Rice")], "Brown rice")).toBeUndefined();
     expect(findExisting([item("Rice")], "")).toBeUndefined();
     expect(findCategory(categories, "condiments")?.id).toBe("c1");
+  });
+});
+
+describe("findMatch", () => {
+  const pantry = [item("Black beans"), item("Milk"), item("Brown rice")];
+
+  it("is sure when the model names an item or the names are equal", () => {
+    expect(findMatch(pantry, "Frijoles", "Milk")).toEqual({ item: pantry[1], sure: true });
+    expect(findMatch(pantry, "black BEANS")).toEqual({ item: pantry[0], sure: true });
+  });
+
+  it("asks about similar names", () => {
+    expect(findMatch(pantry, "Kirkland black beans")).toEqual({ item: pantry[0], sure: false });
+    expect(findMatch(pantry, "Almond milk")).toEqual({ item: pantry[1], sure: false });
+  });
+
+  it("finds nothing for new products", () => {
+    expect(findMatch(pantry, "Brown sugar")).toBeNull();
+    expect(findMatch(pantry, "")).toBeNull();
+  });
+
+  it("prefers the closest name", () => {
+    const both = [item("Rice vinegar brown"), item("Rice")];
+    expect(findMatch(both, "Basmati rice")?.item.name).toBe("Rice");
+  });
+});
+
+describe("addTo", () => {
+  it("adds packages and fills a missing photo", () => {
+    const beans: Item = { ...item("Black beans"), packages: [{ id: "a", level: 100, count: 2, expiresOn: null }] };
+    const extra: Package[] = [{ id: "b", level: 100, count: 6, expiresOn: "2027-01-01" }];
+    expect(addTo(beans, extra, "main/p1")).toEqual({ packages: [...beans.packages, ...extra], photoKey: "main/p1" });
+    expect(addTo({ ...beans, photoKey: "main/old" }, extra, "main/p1")).toEqual({ packages: [...beans.packages, ...extra] });
   });
 });
 
