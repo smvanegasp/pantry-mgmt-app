@@ -5,7 +5,9 @@ Move an item to "Done" (with its PR) when it ships, and add new requests here as
 
 ## Next
 
-- **Stage 6, deploy to AWS with Terraform.** Full plan and prerequisites in AGENTS.md §8.
+- **Stage 6, deploy to AWS with Terraform.** Code is on branch `stage-6-aws`; waiting on
+  Sergio to apply the bootstrap, put secrets in SSM and run the first deploy (AGENTS.md §8),
+  then the gate checks.
 
 ## Up next after the deploy
 
