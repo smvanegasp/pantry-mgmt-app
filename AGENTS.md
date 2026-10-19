@@ -53,7 +53,7 @@ taps when you get home. Photos of products are read by an AI model to fill items
 | 5b | Photo recognition (Groq; OpenAI/Gemini supported), focus/zoom fixes after the camera | #8 |
 | 5c | "Stock your pantry": in-app camera, background reading, swipe review, fix list; one camera button + menu; foldable sections; dark mode; delete/discard photos | #9 |
 | 6 | AWS with Terraform: CloudFront, Lambda (image), HTTP API, DynamoDB, S3, SSM secrets; deploy script | #11 |
-| **6b** | **Deploy from GitHub Actions on merge to `main` (OIDC). Next up.** | |
+| 6b | Deploy from GitHub Actions after CI passes on `main` (OIDC role, no AWS keys in GitHub) | #12 |
 | 7 | Polish, domain, extras. See the backlog | |
 
 **Live at <https://d3bg4vze5d4ttm.cloudfront.net>** (deployed 2026-10-19; Sergio passed the
@@ -85,10 +85,12 @@ Phone ─ HTTPS ─▶ (local) ngrok ─▶ Vite dev server :5173 ─ /api proxy
 AGENTS.md, CLAUDE.md, docs/BACKLOG.md
 docker-compose.yml          api, dynamodb (DynamoDB Local), s3 (adobe/s3mock), web (node:22 Vite)
 .github/workflows/ci.yml    pytest, vitest + build, docker build --target app, terraform validate
+.github/workflows/deploy.yml  after CI passes on main: image -> ECR, Lambda, frontend -> S3
 .mcp.json                   Playwright, AWS docs, Terraform MCP servers
 scripts/set_passcode.py     owner sets the passcode (hidden prompt) -> backend/.env
 scripts/set_aws_secrets.py  passcode hash, Groq key, session secret -> SSM (never printed)
-scripts/deploy.sh           image -> ECR, terraform apply, frontend -> S3, CloudFront invalidation
+scripts/deploy.sh           manual deploy: image -> ECR, terraform apply, frontend upload
+scripts/upload_frontend.sh  frontend/dist -> S3 + CloudFront invalidation (both deploy paths)
 infra/bootstrap/            Terraform state bucket (local state, applied once)
 infra/                      versions (S3 backend), data (DynamoDB, photos), api (ECR, Lambda,
                             HTTP API, IAM), web (frontend bucket, CloudFront), outputs
@@ -222,7 +224,17 @@ terraform -chdir=infra/bootstrap init && terraform -chdir=infra/bootstrap apply 
 (cd backend && uv run python ../scripts/set_aws_secrets.py)                        # secrets -> SSM
 scripts/deploy.sh                                           # asks to approve two applies
 ```
-**Every later deploy:** `scripts/deploy.sh` (append `-auto-approve` to skip the prompt).
+**Code deploys are automatic:** merging into `main` runs CI, and when it passes
+`.github/workflows/deploy.yml` builds and pushes the image, rolls Lambda to its digest, uploads
+the frontend and checks `/api/health` through CloudFront. It assumes `pantry-github-deploy`
+(`infra/github.tf`) through GitHub OIDC; only workflows on `main` can, and the role can only
+deploy code (no Terraform, IAM, data or secrets). Run it again from the Actions tab ("Run
+workflow") to redeploy.
+
+**Infrastructure changes stay manual:** anything under `infra/` needs `terraform plan`, Sergio's
+OK, then `terraform -chdir=infra apply` (or `scripts/deploy.sh`) **before** merging code that
+depends on it; the workflow never applies Terraform. Because both paths deploy the image tagged
+`:latest` by digest, Terraform stays in sync with code deployed by the workflow.
 
 **How it works:**
 - Lambda runs the Dockerfile's `lambda` stage (x86_64, 1 GB, 30s). `deploy.sh` pushes

@@ -5,12 +5,8 @@ Move an item to "Done" (with its PR) when it ships, and add new requests here as
 
 ## Next
 
-- **Stage 6b, deploy from GitHub Actions** with OIDC (no long-lived AWS keys). Agreed plan:
-  every merge into `main` runs the tests, then builds and pushes the image, rolls Lambda to the
-  new digest, and uploads the frontend. Terraform (infrastructure) changes stay manual, applied
-  locally after Sergio sees the plan. Log in to public ECR in the workflow (the Lambda Web
-  Adapter image is rate-limited for anonymous CI pulls). Terraform creates the OIDC provider
-  and a deploy role limited to this app.
+- **Stage 7: polish.** Pick from "Up next" below with Sergio (the tutorial re-record and the
+  favicon/PWA are the most visible).
 
 ## Up next
 
@@ -56,4 +52,4 @@ Move an item to "Done" (with its PR) when it ships, and add new requests here as
 
 ## Done
 
-- Stage 0–6: see the status table in AGENTS.md §3 (PRs #1–#11).
+- Stage 0–6b: see the status table in AGENTS.md §3 (PRs #1–#12).
