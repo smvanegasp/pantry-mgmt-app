@@ -20,7 +20,10 @@ export function DemoBanner({ expiresAt, ownerLoginEnabled }: { expiresAt: number
   }
 
   return (
-    <div className="mb-4 flex items-center gap-2 rounded-xl bg-sky-50 px-3 py-2 text-sm text-sky-900">
+    <div
+      data-demo-banner
+      className="mb-4 flex items-center gap-2 rounded-xl bg-sky-50 px-3 py-2 text-sm text-sky-900"
+    >
       <Flask size={18} weight="fill" className="shrink-0 text-sky-700" aria-hidden />
       <span className="flex-1">
         Demo · resets in {timeLeft(expiresAt)}{" "}

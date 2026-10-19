@@ -40,6 +40,18 @@ docker compose up -d api
 This writes `PASSCODE_HASH` and `SESSION_SECRET` to `backend/.env` (git-ignored); the passcode
 itself is never stored.
 
+## Tutorial clips
+
+The welcome screen shows short clips recorded from the real app in a throwaway demo sandbox
+(sample pantry, so no real data appears). Re-record them after UI changes:
+
+```sh
+docker compose up -d
+cd frontend
+npx playwright install chromium   # once
+npm run record-tutorials          # needs ffmpeg on PATH
+```
+
 ## Backend tests
 
 ```sh
