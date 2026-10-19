@@ -53,7 +53,8 @@ function Clip({
           muted
           loop
           playsInline
-          preload="metadata"
+          // All four clips together are ~0.5 MB; loading them up front avoids stalls on swipe.
+          preload="auto"
           controls={reducedMotion}
           className="block aspect-[390/844] w-full bg-white"
         />

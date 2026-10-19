@@ -24,5 +24,10 @@ def cookie_secure() -> bool:
     return os.environ.get("COOKIE_SECURE", "1") == "1"
 
 
+def sandbox_limit_per_ip() -> int:
+    """Demo sandboxes one IP may start per hour."""
+    return int(os.environ.get("SANDBOX_LIMIT_PER_IP", "20"))
+
+
 SANDBOX_HOURS = 24
 OWNER_SESSION_DAYS = 90

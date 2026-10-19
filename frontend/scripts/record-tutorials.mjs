@@ -16,6 +16,10 @@ import { chromium } from "playwright";
 const BASE = process.argv[2] ?? "http://localhost:5173";
 const OUT = new URL("../public/tutorials/", import.meta.url).pathname.replace(/^\/(\w:)/, "$1");
 const VIEWPORT = { width: 390, height: 844 };
+// Pauses are written for a comfortable pace, then shortened by PACE; the encode then plays
+// back at SPEED. Together they keep clips brisk without skipping any steps.
+const PACE = 0.75;
+const SPEED = 1.2;
 
 // Shows a fading dot wherever the "finger" taps, and hides the demo banner.
 const TAP_OVERLAY = () => {
@@ -43,14 +47,14 @@ const TAP_OVERLAY = () => {
   );
 };
 
-const pause = (page, ms = 700) => page.waitForTimeout(ms);
+const pause = (page, ms = 700) => page.waitForTimeout(ms * PACE);
 const tap = async (page, locator, ms = 700) => {
   await locator.click();
   await pause(page, ms);
 };
 const type = async (page, locator, text) => {
   await locator.click();
-  await locator.pressSequentially(text, { delay: 90 });
+  await locator.pressSequentially(text, { delay: 70 });
   await pause(page, 400);
 };
 const api = (page, method, path, data) =>
@@ -160,8 +164,9 @@ function encode(id, raw, trimStart) {
   const mp4 = join(OUT, `${id}.mp4`);
   const poster = join(OUT, `${id}.jpg`);
   const ffmpeg = (...args) => execFileSync("ffmpeg", ["-y", "-loglevel", "error", ...args]);
-  ffmpeg("-ss", String(trimStart), "-i", raw, "-vf", "fps=24", "-c:v", "libx264",
-    "-preset", "slow", "-crf", "30", "-pix_fmt", "yuv420p", "-movflags", "+faststart", "-an", mp4);
+  ffmpeg("-ss", String(trimStart), "-i", raw, "-vf", `setpts=PTS/${SPEED},fps=30`, "-c:v", "libx264",
+    // Short keyframe interval keeps looping and starting playback smooth on phones.
+    "-preset", "slow", "-crf", "26", "-g", "30", "-pix_fmt", "yuv420p", "-movflags", "+faststart", "-an", mp4);
   ffmpeg("-ss", "0.8", "-i", mp4, "-frames:v", "1", "-q:v", "4", poster);
   return mp4;
 }
@@ -177,5 +182,6 @@ try {
   }
 } finally {
   await browser.close();
-  rmSync(workDir, { recursive: true, force: true });
+  if (process.env.KEEP_RAW) console.log(`Raw recordings kept in ${workDir}`);
+  else rmSync(workDir, { recursive: true, force: true });
 }

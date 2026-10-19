@@ -4,15 +4,15 @@ from fastapi import APIRouter, HTTPException, Request, Response, status
 from pydantic import BaseModel, StringConstraints
 
 from app import ratelimit
-from app.config import passcode_hash
+from app.config import passcode_hash, sandbox_limit_per_ip
 from app.passcode import verify_passcode
 from app.sandbox import OWNER_SPACE, create_sandbox, expires_at
 from app.session import Session, clear_session, read_session, write_session
 
 router = APIRouter(prefix="/api/session", tags=["session"])
 
-# Sandboxes copy the whole pantry, so cap how fast they can be created.
-SANDBOXES_PER_IP_PER_HOUR = 20
+# Sandboxes copy the whole pantry, so cap how fast they can be created
+# (per IP comes from config so local tutorial recording isn't throttled).
 SANDBOXES_PER_HOUR = 500
 # A 4-digit code has 10,000 options: a handful of guesses per IP and a global cap
 # make guessing it impractical. Her session lasts 90 days, so she rarely logs in.
@@ -47,7 +47,7 @@ def get_session(request: Request) -> SessionInfo:
 def _start_sandbox(request: Request, response: Response, sample: bool = False) -> SessionInfo:
     ip = ratelimit.client_ip(request)
     if (
-        ratelimit.hit(f"sandbox-ip#{ip}", 3600) > SANDBOXES_PER_IP_PER_HOUR
+        ratelimit.hit(f"sandbox-ip#{ip}", 3600) > sandbox_limit_per_ip()
         or ratelimit.hit("sandbox-all", 3600) > SANDBOXES_PER_HOUR
     ):
         raise ratelimit.too_many("Too many demos started; try again in a bit")
