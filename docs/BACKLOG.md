@@ -5,7 +5,7 @@ Move an item to "Done" (with its PR) when it ships, and add new requests here as
 Each stage ends at the usual gate: tests, a Playwright check at 390×844 in a sample demo
 (light and dark), Sergio's phone test through ngrok, then a PR. Merging deploys.
 
-## In progress: stage 7d, hardening and making the repo public
+## In review: stage 7d, hardening (PR #18), then making the repo public
 
 Branch `stage-7d-hardening`. A read-only scan (2026-10-19) of every tracked file and the full
 history found **no keys or secrets**. Built:
@@ -24,8 +24,8 @@ history found **no keys or secrets**. Built:
 - **Fine to publish as is:** AWS account ID, CloudFront ID and URL (identifiers, not secrets;
   the deploy role only trusts `main` of this repo; CI never gets secrets on pull requests).
 
-Left: Sergio sets the 6-digit passcode (local + SSM), the alert email and the ngrok password;
-applies `infra/monitoring.tf`; then a final secrets scan, and he makes the repo public.
+Done by Sergio: 6-digit passcode (local + SSM), alert email (subscription confirmed), ngrok
+password; `infra/monitoring.tf` applied. Left: a final secrets scan, then he makes the repo public.
 
 ## Then: stage 7e, custom domain (one of the last steps)
 

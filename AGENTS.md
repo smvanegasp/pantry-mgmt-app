@@ -58,7 +58,7 @@ taps when you get home. Photos of products are read by an AI model to fill items
 | 7a | Search behind an icon; Low / Normal / Plenty stock sections; "how many" items split by expiration date; "Track by" locked on saved items | #15 |
 | 7b | No duplicate items: photo reading knows the pantry's names; similar-item check when adding or stocking up | #16 |
 | 7c | Desktop QR popup, personal welcome note, app icon / PWA, re-recorded tutorial clips | #17 |
-| **7d** | **Hardening (6-digit passcode, no API docs on AWS, ngrok auth, alerts, Dependabot), then make the repo public. Next up.** | |
+| 7d | Hardening: 6-digit passcode with 3-try pause that hides the login button, email alerts, no API docs on AWS, ngrok password, Dependabot | #18 |
 | 7e | Custom domain on CloudFront (ACM + DNS), swap the URL in the deploy workflow and docs | |
 
 **Live at <https://d3bg4vze5d4ttm.cloudfront.net>** (deployed 2026-10-19; Sergio passed the
