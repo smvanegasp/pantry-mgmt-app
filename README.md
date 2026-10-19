@@ -40,6 +40,19 @@ docker compose up -d api
 This writes `PASSCODE_HASH` and `SESSION_SECRET` to `backend/.env` (git-ignored); the passcode
 itself is never stored.
 
+## Photo recognition (local)
+
+Taking a photo of a new item fills in its name, category, tracking mode and printed expiry
+date using Gemini. Add your key to `backend/.env` (git-ignored), then `docker compose up -d api`:
+
+```sh
+GEMINI_API_KEY='...'
+# optional, defaults to gemini-3.8-flash
+GEMINI_MODEL='gemini-3.8-flash'
+```
+
+Daily caps per demo, for the owner, and overall keep costs bounded (`app/routers/recognition.py`).
+
 ## Tutorial clips
 
 The welcome screen shows short clips recorded from the real app in a throwaway demo sandbox

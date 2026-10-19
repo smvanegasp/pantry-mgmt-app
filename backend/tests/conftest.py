@@ -26,6 +26,8 @@ def aws():
     )
     os.environ.pop("DYNAMODB_ENDPOINT", None)
     os.environ.pop("S3_ENDPOINT", None)
+    # Tests must never call the real model (or spend money).
+    os.environ.pop("GEMINI_API_KEY", None)
     with mock_aws():
         db.get_table.cache_clear()
         storage.get_s3.cache_clear()

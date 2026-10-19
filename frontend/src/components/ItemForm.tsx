@@ -1,7 +1,7 @@
-import { CaretDown, CaretRight, Plus } from "@phosphor-icons/react";
+import { CaretDown, CaretRight, Plus, Sparkle } from "@phosphor-icons/react";
 import { useState, type FormEvent } from "react";
 
-import type { Category, ItemInput, Level, Mode, Package } from "../api";
+import { api, type Category, type ItemInput, type Level, type Mode, type Package, type Suggestion } from "../api";
 import { useCreateCategory, useSettings } from "../hooks";
 import { LEVELS, levelLabel } from "../lib/levels";
 import { newPackage } from "../lib/packages";
@@ -23,6 +23,58 @@ interface Props {
 }
 
 const NEW_CATEGORY = "__new__";
+
+type ReadingState = { state: "idle" | "reading" | "done" | "notProduct" } | { state: "error"; message: string };
+
+function PhotoReading({
+  state,
+  canRead,
+  onRead,
+}: {
+  state: ReadingState;
+  canRead: boolean;
+  onRead: () => void;
+}) {
+  const box = "mt-3 flex items-start gap-2 rounded-lg px-3 py-2 text-sm";
+  switch (state.state) {
+    case "reading":
+      return (
+        <p className={`${box} bg-emerald-50 text-emerald-800`} aria-live="polite">
+          <Sparkle size={18} weight="fill" className="shrink-0 animate-pulse" aria-hidden />
+          Reading the label…
+        </p>
+      );
+    case "done":
+      return (
+        <p className={`${box} bg-emerald-50 text-emerald-800`} aria-live="polite">
+          <Sparkle size={18} weight="fill" className="shrink-0" aria-hidden />
+          Filled in from the photo. Check it's right before saving.
+        </p>
+      );
+    case "notProduct":
+      return (
+        <p className={`${box} bg-amber-50 text-amber-800`} aria-live="polite">
+          That doesn't look like a pantry product. Fill it in by hand, or try another photo.
+        </p>
+      );
+    case "error":
+      return (
+        <p className={`${box} bg-red-50 text-red-700`} aria-live="polite">
+          {state.message}
+        </p>
+      );
+    default:
+      return canRead ? (
+        <button
+          type="button"
+          onClick={onRead}
+          className="mt-2 inline-flex items-center gap-1.5 text-sm font-medium text-emerald-700"
+        >
+          <Sparkle size={16} weight="fill" aria-hidden /> Fill in from photo
+        </button>
+      ) : null;
+  }
+}
 const MAX_PACKAGES = 20;
 
 const label = "mb-1.5 block text-sm font-medium text-stone-600";
@@ -82,6 +134,44 @@ export function ItemForm({
   );
   const createCategory = useCreateCategory();
   const settings = useSettings();
+  const [reading, setReading] = useState<ReadingState>({ state: "idle" });
+
+  /** Fill the form from what the photo shows; the user reviews it before saving. */
+  function apply(s: Suggestion) {
+    setItem((prev) => ({
+      ...prev,
+      name: s.name || prev.name,
+      categoryId: s.categoryId ?? prev.categoryId,
+      mode: s.mode,
+      packages: prev.packages.map((p, i) =>
+        i === 0 ? { ...p, count: s.count ?? p.count, expiresOn: s.expiresOn ?? p.expiresOn } : p,
+      ),
+    }));
+    // Offer to create the suggested category instead of silently creating it.
+    if (!s.categoryId && s.newCategoryName && !item.categoryId) setNewCategory(s.newCategoryName);
+  }
+
+  async function readPhoto(photoKey: string) {
+    setReading({ state: "reading" });
+    try {
+      const suggestion = await api.recognize(photoKey);
+      if (!suggestion.isProduct) {
+        setReading({ state: "notProduct" });
+        return;
+      }
+      apply(suggestion);
+      setReading({ state: "done" });
+    } catch (err) {
+      setReading({ state: "error", message: (err as Error).message });
+    }
+  }
+
+  function onPhoto(photoKey: string | null) {
+    set("photoKey", photoKey);
+    setReading({ state: "idle" });
+    // New items are filled in automatically; existing ones only when asked.
+    if (photoKey && !initial) readPhoto(photoKey);
+  }
 
   const set = <K extends keyof ItemInput>(key: K, value: ItemInput[K]) =>
     setItem((prev) => ({ ...prev, [key]: value }));
@@ -110,7 +200,14 @@ export function ItemForm({
 
   return (
     <form onSubmit={submit} className="space-y-5">
-      <PhotoField photoKey={item.photoKey} name={item.name} onChange={(key) => set("photoKey", key)} />
+      <div>
+        <PhotoField photoKey={item.photoKey} name={item.name} onChange={onPhoto} />
+        <PhotoReading
+          state={reading}
+          canRead={item.photoKey !== null}
+          onRead={() => item.photoKey && readPhoto(item.photoKey)}
+        />
+      </div>
 
       <div>
         <label htmlFor="item-name" className={label}>
