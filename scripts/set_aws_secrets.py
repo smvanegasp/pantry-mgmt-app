@@ -31,9 +31,9 @@ PREFIX = "/pantry/"
 
 
 def ask_passcode() -> str:
-    passcode = getpass.getpass("4-digit passcode for AWS (hidden): ")
-    if not re.fullmatch(r"\d{4}", passcode):
-        sys.exit("The passcode must be exactly 4 digits.")
+    passcode = getpass.getpass("6-digit passcode for AWS (hidden): ")
+    if not re.fullmatch(r"\d{6}", passcode):
+        sys.exit("The passcode must be exactly 6 digits.")
     if getpass.getpass("Repeat it: ") != passcode:
         sys.exit("The passcodes don't match.")
     return hash_passcode(passcode)

@@ -5,7 +5,7 @@ import hashlib
 import hmac
 import os
 
-# scrypt cost: slow enough to make offline guessing of a 4-digit code pointless to time,
+# scrypt cost: slow enough to make offline guessing of a short numeric code costly,
 # fast enough for a login request. The real brute-force defense is the rate limit.
 _N, _R, _P = 2**14, 8, 1
 

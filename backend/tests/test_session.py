@@ -38,24 +38,43 @@ def test_owner_login(anon):
 
 
 def test_wrong_or_malformed_passcode(anon):
-    assert anon.post("/api/session/owner", json={"passcode": "0000"}).status_code == 401
-    assert anon.post("/api/session/owner", json={"passcode": "12345"}).status_code == 422
-    assert anon.post("/api/session/owner", json={"passcode": "abcd"}).status_code == 422
+    wrong = anon.post("/api/session/owner", json={"passcode": "000000"})
+    assert wrong.status_code == 401
+    assert wrong.json()["detail"] == "Wrong passcode. 2 tries left."
+    # Six digits only (the old 4-digit codes are rejected too).
+    for bad in ("1234", "12345", "1234567", "abcdef"):
+        assert anon.post("/api/session/owner", json={"passcode": bad}).status_code == 422
     assert anon.get("/api/session").json()["role"] is None
 
 
-def test_login_is_throttled_per_ip(anon):
-    for _ in range(5):
-        assert anon.post("/api/session/owner", json={"passcode": "0000"}).status_code == 401
-    # Even the right code is refused while throttled.
-    response = anon.post("/api/session/owner", json={"passcode": OWNER_PASSCODE})
-    assert response.status_code == 429
+def test_three_wrong_tries_pause_login_and_hide_the_button(anon):
+    tries = [anon.post("/api/session/owner", json={"passcode": "000000"}) for _ in range(3)]
+    assert [t.status_code for t in tries] == [401, 401, 429]
+    assert tries[1].json()["detail"] == "Wrong passcode. 1 try left."
+    assert "paused" in tries[2].json()["detail"]
+    # Even the right code is refused while paused, and the app hides the login button.
+    assert anon.post("/api/session/owner", json={"passcode": OWNER_PASSCODE}).status_code == 429
+    assert anon.get("/api/session").json()["ownerLoginEnabled"] is False
+
+
+def test_global_cap_pauses_login_everywhere(anon):
+    # Wrong tries spread over many networks (each IP gets 3).
+    for i in range(10):
+        ip = f"203.0.113.{i // 3}:1234"
+        anon.post("/api/session/owner", json={"passcode": "000000"}, headers={"cloudfront-viewer-address": ip})
+    assert anon.get("/api/session").json()["ownerLoginEnabled"] is False
+    fresh = anon.post(
+        "/api/session/owner",
+        json={"passcode": OWNER_PASSCODE},
+        headers={"cloudfront-viewer-address": "198.51.100.7:1"},
+    )
+    assert fresh.status_code == 429
 
 
 def test_login_disabled_without_passcode(anon, monkeypatch):
     monkeypatch.delenv("PASSCODE_HASH")
     assert anon.get("/api/session").json()["ownerLoginEnabled"] is False
-    assert anon.post("/api/session/owner", json={"passcode": "1234"}).status_code == 503
+    assert anon.post("/api/session/owner", json={"passcode": "123456"}).status_code == 503
 
 
 def test_logout(client):

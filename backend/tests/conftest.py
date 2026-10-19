@@ -8,7 +8,7 @@ from app import db, storage
 from app.main import app
 from app.passcode import hash_passcode
 
-OWNER_PASSCODE = "4821"
+OWNER_PASSCODE = "482193"
 _HASH = hash_passcode(OWNER_PASSCODE)
 
 
