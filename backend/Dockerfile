@@ -1,5 +1,5 @@
 # Stage "app": the API image used by docker compose and CI.
-FROM python:3.12-slim AS app
+FROM python:3.14-slim AS app
 
 COPY --from=ghcr.io/astral-sh/uv:0.9 /uv /usr/local/bin/uv
 
