@@ -1,4 +1,4 @@
-import { Basket, Plus } from "@phosphor-icons/react";
+import { Basket, CameraPlus, Plus } from "@phosphor-icons/react";
 import { useState } from "react";
 
 import type { Item, ItemInput } from "../api";
@@ -6,6 +6,7 @@ import { BottomSheet } from "../components/BottomSheet";
 import { ItemCard } from "../components/ItemCard";
 import { ItemForm } from "../components/ItemForm";
 import { PantryControls } from "../components/PantryControls";
+import { StockUpSheet } from "../components/StockUpSheet";
 import {
   useCategories,
   useCreateItem,
@@ -43,6 +44,7 @@ export function PantryPage() {
   const settings = useSettings();
   const list = useList();
   const [sheet, setSheet] = useState<Sheet>(null);
+  const [stockingUp, setStockingUp] = useState(false);
   const [search, setSearch] = useState("");
   // Filters and sort are remembered between visits; the search text is not.
   const [view, setView] = usePersistentState<ViewPrefs>("pantry.view", DEFAULT_VIEW);
@@ -117,7 +119,15 @@ export function PantryPage() {
         <div className="mt-16 text-center text-stone-500">
           <Basket size={48} weight="fill" className="mx-auto text-stone-300" aria-hidden />
           <p className="mt-2 font-medium">Your pantry is empty</p>
-          <p className="text-sm">Tap + to add your first item.</p>
+          <p className="text-sm">Snap a photo of each product and it's filled in for you.</p>
+          <button
+            type="button"
+            onClick={() => setStockingUp(true)}
+            className="mt-5 inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-5 py-3 font-semibold text-white"
+          >
+            <CameraPlus size={22} weight="fill" aria-hidden /> Stock your pantry with photos
+          </button>
+          <p className="mt-3 text-sm">Or tap + to add one item at a time.</p>
         </div>
       )}
 
@@ -165,12 +175,22 @@ export function PantryPage() {
 
       <button
         type="button"
+        onClick={() => setStockingUp(true)}
+        className="fixed right-6 bottom-[calc(9.5rem+env(safe-area-inset-bottom))] z-30 inline-flex h-12 w-12 items-center justify-center rounded-full bg-white text-emerald-700 shadow-xl shadow-stone-900/30 ring-1 ring-stone-200 active:bg-stone-100"
+        aria-label="Stock your pantry with photos"
+      >
+        <CameraPlus size={24} weight="fill" aria-hidden />
+      </button>
+      <button
+        type="button"
         onClick={() => setSheet({ kind: "new" })}
         className="fixed right-5 bottom-[calc(5rem+env(safe-area-inset-bottom))] z-30 inline-flex h-14 w-14 items-center justify-center rounded-full bg-emerald-600 text-white shadow-xl shadow-stone-900/30 ring-4 ring-white active:bg-emerald-700"
         aria-label="Add item"
       >
         <Plus size={28} weight="bold" aria-hidden />
       </button>
+
+      {stockingUp && <StockUpSheet onClose={() => setStockingUp(false)} />}
 
       {sheet && (
         <BottomSheet title={sheet.kind === "edit" ? "Edit item" : "Add item"} onClose={close}>
