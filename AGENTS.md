@@ -3,6 +3,8 @@
 Read this first. It is the full context for continuing work in a new chat: what the app is, how
 we work, what's done, how to run and test it, the rules that matter, and what's next. The
 open work list lives in **[docs/BACKLOG.md](docs/BACKLOG.md)**; keep both files up to date.
+**[README.md](README.md)** is the public explanation (architecture, the ngrok → PR → CI →
+deploy flow, CI/CD, AWS, security, cost). Update it in the same PR whenever any of those change.
 
 ---
 
@@ -53,8 +55,12 @@ taps when you get home. Photos of products are read by an AI model to fill items
 | 5b | Photo recognition (Groq; OpenAI/Gemini supported), focus/zoom fixes after the camera | #8 |
 | 5c | "Stock your pantry": in-app camera, background reading, swipe review, fix list; one camera button + menu; foldable sections; dark mode; delete/discard photos | #9 |
 | 6 | AWS with Terraform: CloudFront, Lambda (image), HTTP API, DynamoDB, S3, SSM secrets; deploy script | #11 |
-| 6b | Deploy from GitHub Actions after CI passes on `main` (OIDC role, no AWS keys in GitHub) | #12 |
-| 7 | Polish, domain, extras. See the backlog | |
+| 6b | Deploy from GitHub Actions after CI passes on `main` (OIDC role, no AWS keys in GitHub) | #12, #13 |
+| 7a | Search behind an icon; Low / Normal / Plenty stock sections; "how many" items split by expiration date; "Track by" locked on saved items | #15 |
+| **7b** | **No duplicate items: similar-item check when adding or stocking up. Next up.** | |
+| 7c | Personal welcome note, app icon / PWA, re-recorded tutorial clips | |
+| 7d | Hardening (6-digit passcode, no API docs on AWS, ngrok auth, alerts, Dependabot), then make the repo public | |
+| 7e | Custom domain on CloudFront (ACM + DNS), swap the URL in the deploy workflow and docs | |
 
 **Live at <https://d3bg4vze5d4ttm.cloudfront.net>** (deployed 2026-10-19; Sergio passed the
 phone gate). Her real pantry there started empty. Local (Docker + ngrok) stays the place to
