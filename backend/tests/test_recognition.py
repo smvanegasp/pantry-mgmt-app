@@ -62,6 +62,14 @@ def test_suggests_a_new_category_when_none_matches(client, model):
     assert result["newCategoryName"] == "Condiments"
 
 
+def test_non_product_with_null_name(client, model):
+    model.answer.update(isProduct=False, name=None, categoryName=None, expiresOn=None)
+    result = client.post("/api/recognize", json={"photoKey": photo(client)})
+    assert result.status_code == 200
+    assert result.json()["isProduct"] is False
+    assert result.json()["name"] == ""
+
+
 def test_count_only_applies_to_count_items(client, model):
     model.answer.update(mode="level", count=3)
     assert client.post("/api/recognize", json={"photoKey": photo(client)}).json()["count"] is None

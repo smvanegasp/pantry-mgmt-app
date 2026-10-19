@@ -32,7 +32,8 @@ class RecognitionFailed(Exception):
 
 class ModelAnswer(BaseModel):
     isProduct: bool
-    name: str
+    # Models sometimes return null for non-products.
+    name: str | None
     categoryName: str | None
     mode: Literal["level", "count"]
     count: int | None = None

@@ -68,7 +68,7 @@ def recognize_photo(body: RecognizeIn, space: str = Depends(current_space)) -> S
     category_id = by_name.get(suggested.lower())
     return Suggestion(
         isProduct=answer.isProduct,
-        name=answer.name.strip()[:80],
+        name=(answer.name or "").strip()[:80],
         categoryId=category_id,
         newCategoryName=suggested[:80] if suggested and category_id is None else None,
         mode=answer.mode,
