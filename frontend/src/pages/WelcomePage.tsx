@@ -9,7 +9,12 @@ const TUTORIALS: Tutorial[] = [
   {
     id: "track",
     title: "Know what's in your pantry",
-    text: "Tap how full something is, or how many are left. Add items with an expiration date.",
+    text: "Tap how full something is, or how many are left. Search, and add items with an expiration date.",
+  },
+  {
+    id: "stock",
+    title: "Stock your pantry in a snap",
+    text: "Snap your groceries one after another, then swipe. Things you already have are added to, not doubled.",
   },
   {
     id: "list",
