@@ -20,6 +20,7 @@ function item({ level = 100, count = 1, expiresOn = null, ...overrides }: ItemSp
     buyWhenLevel: null,
     buyWhenCount: null,
     packages: [{ id: "p", level, count, expiresOn }],
+    photoKey: null,
     createdAt: "2026-01-01T00:00:00+00:00",
     updatedAt: "2026-01-01T00:00:00+00:00",
     ...overrides,

@@ -39,6 +39,8 @@ class Package(BaseModel):
 
 
 Packages = Annotated[list[Package], Field(min_length=1, max_length=20)]
+# "<space>/<photo id>" as returned by POST /api/photos.
+PhotoKey = Annotated[str, StringConstraints(pattern=r"^(main|sb-\d+-[0-9a-f]{32})/[0-9a-f]{32}$")]
 
 
 class ItemIn(BaseModel):
@@ -49,6 +51,7 @@ class ItemIn(BaseModel):
     buyWhenLevel: Level | None = None
     buyWhenCount: Count | None = None
     packages: Packages = Field(default_factory=lambda: [Package()])
+    photoKey: PhotoKey | None = None
 
 
 class ItemPatch(BaseModel):
@@ -60,6 +63,7 @@ class ItemPatch(BaseModel):
     buyWhenLevel: Level | None = None
     buyWhenCount: Count | None = None
     packages: Packages | None = None
+    photoKey: PhotoKey | None = None
 
 
 class Item(ItemIn):

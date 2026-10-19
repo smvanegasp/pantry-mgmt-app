@@ -4,7 +4,7 @@ import pytest
 from fastapi.testclient import TestClient
 from moto import mock_aws
 
-from app import db
+from app import db, storage
 from app.main import app
 from app.passcode import hash_passcode
 
@@ -25,11 +25,15 @@ def aws():
         COOKIE_SECURE="0",
     )
     os.environ.pop("DYNAMODB_ENDPOINT", None)
+    os.environ.pop("S3_ENDPOINT", None)
     with mock_aws():
         db.get_table.cache_clear()
+        storage.get_s3.cache_clear()
         db.create_table_if_missing()
+        storage.create_bucket_if_missing()
         yield
     db.get_table.cache_clear()
+    storage.get_s3.cache_clear()
 
 
 @pytest.fixture

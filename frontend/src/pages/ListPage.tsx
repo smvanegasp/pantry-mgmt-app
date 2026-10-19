@@ -4,6 +4,7 @@ import { useState } from "react";
 import type { Item, ListEntry } from "../api";
 import { AddToList } from "../components/AddToList";
 import { InfoTip } from "../components/InfoTip";
+import { ItemThumb } from "../components/Photo";
 import { RestockSheet } from "../components/RestockSheet";
 import {
   useCategories,
@@ -49,6 +50,7 @@ function EntryRow({ entry, item }: { entry: ListEntry; item?: Item }) {
           {note && !entry.checked && <span className="text-xs text-stone-500">{note}</span>}
         </span>
       </button>
+      {item?.photoKey && !entry.checked && <ItemThumb photoKey={item.photoKey} alt={item.name} size={40} />}
       <button
         type="button"
         onClick={() => remove.mutate(entry.id)}

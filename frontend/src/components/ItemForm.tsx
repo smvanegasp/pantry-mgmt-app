@@ -10,6 +10,7 @@ import { ExpiryPicker } from "./ExpiryPicker";
 import { InfoTip } from "./InfoTip";
 import { LevelPicker } from "./LevelPicker";
 import { PackageCarousel } from "./PackageCarousel";
+import { PhotoField } from "./Photo";
 
 interface Props {
   initial?: ItemInput;
@@ -71,6 +72,7 @@ export function ItemForm({
         buyWhenLevel: null,
         buyWhenCount: null,
         packages: [newPackage()],
+        photoKey: null,
       },
   );
   const [newCategory, setNewCategory] = useState<string | null>(null);
@@ -108,6 +110,8 @@ export function ItemForm({
 
   return (
     <form onSubmit={submit} className="space-y-5">
+      <PhotoField photoKey={item.photoKey} name={item.name} onChange={(key) => set("photoKey", key)} />
+
       <div>
         <label htmlFor="item-name" className={label}>
           Name

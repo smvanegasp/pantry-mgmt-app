@@ -23,6 +23,8 @@ export interface Item {
   buyWhenLevel: Level | null;
   buyWhenCount: number | null;
   packages: Package[];
+  /** "<space>/<id>" from uploadPhoto; null when there's no photo. */
+  photoKey: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -64,9 +66,11 @@ export interface SessionInfo {
 export const SESSION_EXPIRED = "pantry:session-expired";
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  // FormData bodies set their own multipart Content-Type.
+  const isForm = init?.body instanceof FormData;
   const res = await fetch(`/api${path}`, {
     ...init,
-    headers: { "Content-Type": "application/json", ...init?.headers },
+    headers: isForm ? init?.headers : { "Content-Type": "application/json", ...init?.headers },
   });
   if (!res.ok) {
     if (res.status === 401 && !path.startsWith("/session")) {
@@ -89,7 +93,18 @@ const json = (method: string, body: unknown): RequestInit => ({
   body: JSON.stringify(body),
 });
 
+export function photoUrl(photoKey: string, size: "full" | "thumb" = "full"): string {
+  return `/api/photos/${photoKey}${size === "thumb" ? "?size=thumb" : ""}`;
+}
+
 export const api = {
+  uploadPhoto: (photo: Blob, thumb: Blob) => {
+    const form = new FormData();
+    form.append("photo", photo, "photo.jpg");
+    form.append("thumb", thumb, "thumb.jpg");
+    return request<{ photoKey: string }>("/photos", { method: "POST", body: form });
+  },
+
   getSession: () => request<SessionInfo>("/session"),
   startGuest: () => request<SessionInfo>("/session/guest", { method: "POST" }),
   resetGuest: () => request<SessionInfo>("/session/guest/reset", { method: "POST" }),
