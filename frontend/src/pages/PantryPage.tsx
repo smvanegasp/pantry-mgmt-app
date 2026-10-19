@@ -166,7 +166,7 @@ export function PantryPage() {
       <button
         type="button"
         onClick={() => setSheet({ kind: "new" })}
-        className="fixed right-5 bottom-[calc(5rem+env(safe-area-inset-bottom))] z-30 inline-flex h-14 w-14 items-center justify-center rounded-full bg-emerald-600 text-white shadow-lg active:bg-emerald-700"
+        className="fixed right-5 bottom-[calc(5rem+env(safe-area-inset-bottom))] z-30 inline-flex h-14 w-14 items-center justify-center rounded-full bg-emerald-600 text-white shadow-xl shadow-stone-900/30 ring-4 ring-white active:bg-emerald-700"
         aria-label="Add item"
       >
         <Plus size={28} weight="bold" aria-hidden />

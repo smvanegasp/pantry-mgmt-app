@@ -4,6 +4,16 @@ html {
   -webkit-tap-highlight-color: transparent;
 }
 
+/* iPhones zoom the page when a field with text under 16px gets focus, and don't always zoom
+   back out. Unlayered, so it wins over Tailwind's text-sm on touch screens only. */
+@media (pointer: coarse) {
+  input,
+  select,
+  textarea {
+    font-size: 16px;
+  }
+}
+
 body {
   @apply bg-stone-50 text-stone-900 antialiased;
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;

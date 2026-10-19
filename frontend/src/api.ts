@@ -93,6 +93,18 @@ const json = (method: string, body: unknown): RequestInit => ({
   body: JSON.stringify(body),
 });
 
+/** What a photo looks like; always reviewed by the user before saving. */
+export interface Suggestion {
+  isProduct: boolean;
+  name: string;
+  categoryId: string | null;
+  /** A category the model suggests that doesn't exist yet. */
+  newCategoryName: string | null;
+  mode: Mode;
+  count: number | null;
+  expiresOn: string | null;
+}
+
 export function photoUrl(photoKey: string, size: "full" | "thumb" = "full"): string {
   return `/api/photos/${photoKey}${size === "thumb" ? "?size=thumb" : ""}`;
 }
@@ -104,6 +116,7 @@ export const api = {
     form.append("thumb", thumb, "thumb.jpg");
     return request<{ photoKey: string }>("/photos", { method: "POST", body: form });
   },
+  recognize: (photoKey: string) => request<Suggestion>("/recognize", json("POST", { photoKey })),
 
   getSession: () => request<SessionInfo>("/session"),
   startGuest: () => request<SessionInfo>("/session/guest", { method: "POST" }),
