@@ -26,7 +26,7 @@ env:
   REPOSITORY: pantry-api
   WEB_BUCKET: pantry-web-816940506502
   DISTRIBUTION_ID: E2TOQMJJ5K2WZU
-  SITE_URL: https://d3bg4vze5d4ttm.cloudfront.net
+  SITE_URL: https://pantry.sergiovanegas.com
 
 jobs:
   deploy:

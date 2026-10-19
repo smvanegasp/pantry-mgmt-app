@@ -5,7 +5,7 @@ what's running low, check things off in the store, and put groceries away in a f
 you get home. Snap a photo of a product and an AI model fills in its name, category and
 expiry date.
 
-**Live:** <https://d3bg4vze5d4ttm.cloudfront.net>. Tap **Continue** for a private demo
+**Live:** <https://pantry.sergiovanegas.com>. Tap **Continue** for a private demo
 with a sample pantry. It resets after 24 hours and can't touch anyone else's data.
 
 One household uses it for real (the owner logs in with a passcode); everyone else gets a
@@ -245,6 +245,7 @@ All in Terraform under [`infra/`](infra/), with state in a versioned S3 bucket c
 | `api.tf` | ECR repository (keeps the last 5 images), Lambda (container image, 1 GB, 30 s), HTTP API with throttling, IAM role with least privilege, log group |
 | `web.tf` | Private frontend bucket (CloudFront origin access control), CloudFront distribution with security headers |
 | `github.tf` | GitHub OIDC provider and the deploy role |
+| `domain.tf` | ACM certificate for `pantry.sergiovanegas.com` (DNS-validated) used by CloudFront; the DNS records live at Hostinger |
 
 - **CloudFront** serves `/*` from S3 and sends `/api/*` to API Gateway with caching off, using
   the `AllViewerExceptHostHeader` policy. That forwards cookies and the
