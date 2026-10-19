@@ -3,6 +3,8 @@
 Read this first. It is the full context for continuing work in a new chat: what the app is, how
 we work, what's done, how to run and test it, the rules that matter, and what's next. The
 open work list lives in **[docs/BACKLOG.md](docs/BACKLOG.md)**; keep both files up to date.
+**[README.md](README.md)** is the public explanation (architecture, the ngrok → PR → CI →
+deploy flow, CI/CD, AWS, security, cost). Update it in the same PR whenever any of those change.
 
 ---
 
