@@ -100,6 +100,8 @@ export interface Suggestion {
   categoryId: string | null;
   /** A category the model suggests that doesn't exist yet. */
   newCategoryName: string | null;
+  /** The pantry item the model says this same product already is. */
+  existingItemId: string | null;
   mode: Mode;
   count: number | null;
   expiresOn: string | null;

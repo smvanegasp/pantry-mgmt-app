@@ -46,6 +46,7 @@ def test_recognizes_a_photo_and_matches_an_existing_category(client, model):
         "name": "Barilla spaghetti",
         "categoryId": cat["id"],
         "newCategoryName": None,
+        "existingItemId": None,
         "mode": "count",
         "count": 2,
         "expiresOn": "2028-09-30",
@@ -53,6 +54,24 @@ def test_recognizes_a_photo_and_matches_an_existing_category(client, model):
     [call] = model.calls
     assert call["mime_type"] == "image/jpeg"
     assert "Grains & Pasta" in call["prompt"]
+
+
+def test_points_at_the_pantry_item_for_the_same_product(client, model):
+    beans = client.post("/api/items", json={"name": "Black beans", "mode": "count"}).json()
+    client.post("/api/items", json={"name": "Olive oil"})
+    # The model is told what's in the pantry and answers with an existing name.
+    model.answer["name"] = "black beans"
+
+    result = client.post("/api/recognize", json={"photoKey": photo(client)}).json()
+
+    assert result["existingItemId"] == beans["id"]
+    assert "Black beans; Olive oil" in model.calls[0]["prompt"]
+
+
+def test_a_new_product_has_no_existing_item(client, model):
+    client.post("/api/items", json={"name": "Milk"})
+    model.answer["name"] = "Almond milk"
+    assert client.post("/api/recognize", json={"photoKey": photo(client)}).json()["existingItemId"] is None
 
 
 def test_suggests_a_new_category_when_none_matches(client, model):

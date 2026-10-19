@@ -25,6 +25,7 @@ import {
   type SortKey,
   type StatusFilter,
 } from "../lib/items";
+import { addTo } from "../lib/stockup";
 import { usePersistentState } from "../lib/usePersistentState";
 
 type Sheet = { kind: "new" } | { kind: "edit"; item: Item } | null;
@@ -99,6 +100,12 @@ export function PantryPage() {
     } else {
       await createItem.mutateAsync(input);
     }
+    close();
+  }
+
+  /** "Add one product" for something already in the pantry: add to it, don't duplicate it. */
+  async function saveInto(existing: Item, input: ItemInput) {
+    await updateItem.mutateAsync({ id: existing.id, patch: addTo(existing, input.packages, input.photoKey) });
     close();
   }
 
@@ -253,6 +260,8 @@ export function PantryPage() {
             key={sheet.kind === "edit" ? sheet.item.id : "new"}
             initial={sheet.kind === "edit" ? toInput(sheet.item) : undefined}
             lockMode={sheet.kind === "edit"}
+            items={allItems}
+            onAddTo={sheet.kind === "new" ? saveInto : undefined}
             categories={categories.data ?? []}
             submitLabel={sheet.kind === "edit" ? "Save" : "Add to pantry"}
             submitting={createItem.isPending || updateItem.isPending}

@@ -1,6 +1,32 @@
 import { describe, expect, it } from "vitest";
 
-import { editDistance, fuzzyMatch } from "./search";
+import { editDistance, fuzzyMatch, similarNames } from "./search";
+
+describe("similarNames", () => {
+  it("finds the same product under a longer or slightly different name", () => {
+    expect(similarNames("Black beans", "Kirkland black beans")).toBe(true);
+    expect(similarNames("black bean", "Black Beans")).toBe(true);
+    expect(similarNames("Olive oil", "Olive oyl")).toBe(true);
+    expect(similarNames("Café molido", "cafe")).toBe(true);
+  });
+
+  it("flags related products for the person to decide", () => {
+    expect(similarNames("Milk", "Almond milk")).toBe(true);
+  });
+
+  it("keeps different products apart", () => {
+    expect(similarNames("Brown rice", "Brown sugar")).toBe(false);
+    expect(similarNames("Black beans", "Blackberries")).toBe(false);
+    expect(similarNames("Tea", "Steak")).toBe(false);
+    expect(similarNames("Pasta sauce", "Pasta")).toBe(true);
+    expect(similarNames("Spaghetti", "Rice")).toBe(false);
+  });
+
+  it("ignores half-typed names", () => {
+    expect(similarNames("Bla", "Black beans")).toBe(false);
+    expect(similarNames("", "Black beans")).toBe(false);
+  });
+});
 
 describe("editDistance", () => {
   it("counts swaps as one edit", () => {

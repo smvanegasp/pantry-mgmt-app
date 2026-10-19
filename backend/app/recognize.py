@@ -50,7 +50,8 @@ SCHEMA = {
         },
         "name": {
             "type": "string",
-            "description": "Short name a person would use, brand first if visible, e.g. 'Barilla spaghetti'.",
+            "description": "An existing pantry item's exact name if it's the same product; otherwise a "
+            "short name a person would use, brand first if visible, e.g. 'Barilla spaghetti'.",
         },
         "categoryName": {
             "type": ["string", "null"],
@@ -71,13 +72,22 @@ SCHEMA = {
 }
 
 
-def _prompt(categories: list[str], today: date) -> str:
+# Enough for any real pantry; keeps the prompt small if a demo is stuffed with items.
+MAX_ITEM_NAMES = 300
+
+
+def _prompt(categories: list[str], items: list[str], today: date) -> str:
     listed = ", ".join(categories) if categories else "(none yet)"
+    have = "; ".join(items[:MAX_ITEM_NAMES]) if items else "(none yet)"
     return f"""You help someone log items in their home pantry from a photo.
 Today is {today.isoformat()}. Their existing categories: {listed}.
+Products already in their pantry: {have}.
 
 Return:
-- name: what they'd call it (brand + product, e.g. "Barilla spaghetti"); no sizes or marketing text.
+- name: if the photo shows the same product as one already in their pantry, that name exactly
+  as written above (a different brand or size of the same thing counts as the same product;
+  a different product does not, e.g. "Almond milk" is not "Milk"). Otherwise what they'd call
+  it (brand + product, e.g. "Barilla spaghetti"); no sizes or marketing text.
 - categoryName: the best matching existing category, exactly as written above. If none fits,
   suggest a short new one (e.g. "Condiments"). Null only if you can't tell.
 - mode: "level" for things used a bit at a time (rice, oil, flour, coffee, sauces);
@@ -195,8 +205,10 @@ def call_model(image: bytes, mime_type: str, prompt: str) -> dict:
         ) from None
 
 
-def recognize(image: bytes, mime_type: str, categories: list[str], today: date) -> ModelAnswer:
-    raw = call_model(image, mime_type, _prompt(categories, today))
+def recognize(
+    image: bytes, mime_type: str, categories: list[str], items: list[str], today: date
+) -> ModelAnswer:
+    raw = call_model(image, mime_type, _prompt(categories, items, today))
     try:
         return ModelAnswer(**raw)
     except (ValidationError, TypeError):

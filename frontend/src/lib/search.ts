@@ -48,6 +48,24 @@ function wordMatches(queryWord: string, word: string): boolean {
   );
 }
 
+/** Same word, give or take a typo or a plural ("bean" / "beans"); no prefixes. */
+function sameWord(a: string, b: string): boolean {
+  if (a === b) return true;
+  const typos = allowedTypos(Math.min(a.length, b.length));
+  return typos > 0 && editDistance(a, b) <= typos;
+}
+
+/**
+ * Names that may be the same product: every word of the shorter name is a word of the longer
+ * one ("Black beans" and "Kirkland black beans"). Also true for "Milk" and "Almond milk", so
+ * callers ask the person instead of merging. Whole words only, so half-typed names don't match.
+ */
+export function similarNames(a: string, b: string): boolean {
+  const [short, long] = [words(a), words(b)].sort((x, y) => x.length - y.length);
+  if (short.length === 0) return false;
+  return short.every((s) => long.some((l) => sameWord(s, l)));
+}
+
 /** True when every word of the query matches some word of the text (in any order). */
 export function fuzzyMatch(query: string, ...texts: string[]): boolean {
   const queryWords = words(query);

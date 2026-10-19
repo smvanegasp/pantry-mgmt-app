@@ -1,10 +1,20 @@
-import { CaretDown, CaretRight, Plus, Sparkle, WarningCircle } from "@phosphor-icons/react";
-import { useState, type FormEvent } from "react";
+import { Basket, CaretDown, CaretRight, Plus, Sparkle, WarningCircle } from "@phosphor-icons/react";
+import { useEffect, useState, type FormEvent } from "react";
 
-import { api, type Category, type ItemInput, type Level, type Mode, type Package, type Suggestion } from "../api";
+import {
+  api,
+  type Category,
+  type Item,
+  type ItemInput,
+  type Level,
+  type Mode,
+  type Package,
+  type Suggestion,
+} from "../api";
 import { useCreateCategory, useSettings } from "../hooks";
 import { LEVELS, levelLabel } from "../lib/levels";
-import { newPackage } from "../lib/packages";
+import { newPackage, stockNote } from "../lib/packages";
+import { findMatch } from "../lib/stockup";
 import { CountStepper } from "./CountStepper";
 import { ExpiryPicker } from "./ExpiryPicker";
 import { InfoTip } from "./InfoTip";
@@ -16,6 +26,10 @@ interface Props {
   initial?: ItemInput;
   /** Saved items: "Track by" sits behind a Change link so it isn't switched by accident. */
   lockMode?: boolean;
+  /** The pantry, to offer adding to an item that looks like the same product. */
+  items?: Item[];
+  /** Add this form's packages to an existing item instead of creating a duplicate. */
+  onAddTo?: (existing: Item, input: ItemInput) => void;
   categories: Category[];
   submitLabel: string;
   submitting: boolean;
@@ -113,6 +127,8 @@ const MODE_LABEL: Record<Mode, string> = { level: "How full", count: "How many" 
 export function ItemForm({
   initial,
   lockMode = false,
+  items,
+  onAddTo,
   categories,
   submitLabel,
   submitting,
@@ -204,10 +220,25 @@ export function ItemForm({
     setNewCategory(null);
   }
 
+  // A new item that looks like one already in the pantry: offer to add to it instead. The photo
+  // reader returns an existing item's exact name when it's the same product, so names suffice.
+  const match = !lockMode && onAddTo && items ? findMatch(items, item.name) : null;
+  // Ask the amount the way the matched item counts it ("how many" cans, not "how full").
+  const matchMode = match?.item.mode;
+  useEffect(() => {
+    if (matchMode) setItem((prev) => ({ ...prev, mode: matchMode }));
+  }, [match?.item.id]);
+
   function submit(e: FormEvent) {
     e.preventDefault();
     if (!item.name.trim()) return;
-    onSubmit({ ...item, name: item.name.trim() });
+    const input = { ...item, name: item.name.trim() };
+    if (match && onAddTo) onAddTo(match.item, input);
+    else onSubmit(input);
+  }
+
+  function submitAsNew() {
+    if (item.name.trim()) onSubmit({ ...item, name: item.name.trim() });
   }
 
   const several = item.packages.length > 1;
@@ -236,6 +267,15 @@ export function ItemForm({
           placeholder="e.g. Olive oil"
           className="w-full rounded-lg border border-stone-200 px-3 py-2.5 text-base"
         />
+        {match && (
+          <p className="mt-2 flex items-start gap-1.5 rounded-lg bg-sky-50 px-3 py-2 text-sm text-sky-800" aria-live="polite">
+            <Basket size={18} weight="fill" className="mt-px shrink-0" aria-hidden />
+            <span>
+              {match.sure ? "Already in your pantry" : "Looks like one you have"}:{" "}
+              <b>{match.item.name}</b> ({stockNote(match.item)}). Adding to it keeps a single entry.
+            </span>
+          </p>
+        )}
       </div>
 
       <div>
@@ -472,9 +512,19 @@ export function ItemForm({
           disabled={submitting || !item.name.trim()}
           className="flex-1 rounded-xl bg-emerald-600 py-3 text-lg font-semibold text-white disabled:opacity-50"
         >
-          {submitting ? "Saving…" : submitLabel}
+          {submitting ? "Saving…" : match ? `Add to “${match.item.name}”` : submitLabel}
         </button>
       </div>
+      {match && (
+        <button
+          type="button"
+          onClick={submitAsNew}
+          disabled={submitting}
+          className="-mt-2 w-full py-2 text-sm font-medium text-stone-600 disabled:opacity-50"
+        >
+          It's a different product: add as a new item
+        </button>
+      )}
     </form>
   );
 }
