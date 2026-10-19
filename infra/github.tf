@@ -3,7 +3,10 @@
 # CloudFront; infrastructure changes still go through a local `terraform apply`.
 
 locals {
-  github_repo = "smvanegasp/pantry-mgmt-app"
+  # The repo sends GitHub's immutable subject ("owner@ownerId/repo@repoId"), so a deleted and
+  # re-created repo with the same name can't match. Check the format with:
+  #   gh api repos/smvanegasp/pantry-mgmt-app/actions/oidc/customization/sub
+  github_repo = "smvanegasp@145235327/pantry-mgmt-app@1424881567"
 }
 
 resource "aws_iam_openid_connect_provider" "github" {
