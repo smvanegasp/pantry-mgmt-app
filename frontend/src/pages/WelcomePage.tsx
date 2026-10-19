@@ -48,15 +48,16 @@ export function WelcomePage() {
       </div>
       {/* A personal hello instead of a tagline: who made this and why. */}
       <div className="mt-4 flex items-start gap-3 rounded-2xl bg-emerald-50 p-3">
-        <span
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-600 text-sm font-semibold text-white"
-          aria-hidden
-        >
-          SV
-        </span>
+        <img
+          src="/sergio.jpg"
+          alt="Sergio"
+          width={48}
+          height={48}
+          className="h-12 w-12 shrink-0 rounded-full object-cover ring-2 ring-white"
+        />
         <p className="text-sm text-stone-700">
-          <b>Hi, I'm Sergio.</b> I built this app for my wife, so we always know what's in our pantry:
-          what we bring home from Costco, and what to use before it goes bad.
+          <b>Hi, I'm Sergio!</b> I built this for my wife and me, so the good food we bring home
+          from Costco gets eaten, not thrown away. A little tech, a lot less waste.
         </p>
       </div>
 
