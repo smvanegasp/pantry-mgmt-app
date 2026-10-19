@@ -1,3 +1,4 @@
+import logging
 from datetime import date
 from typing import Literal
 
@@ -13,6 +14,8 @@ from app.sandbox import PREFIX
 from app.space import current_space
 
 router = APIRouter(prefix="/api/recognize", tags=["recognition"])
+# Uvicorn's logger, so the line reaches the console and CloudWatch.
+log = logging.getLogger("uvicorn.error")
 
 # Each call costs a fraction of a cent; these keep the monthly bill small no matter what.
 GUEST_PER_DAY = 20
@@ -60,7 +63,8 @@ def recognize_photo(body: RecognizeIn, space: str = Depends(current_space)) -> S
         answer = recognize(image, mime_type, [c.name for c in categories], date.today())
     except RecognitionUnavailable:
         raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "Photo reading isn't set up") from None
-    except RecognitionFailed:
+    except RecognitionFailed as err:
+        log.warning("Photo reading failed: %s", err)
         raise HTTPException(status.HTTP_502_BAD_GATEWAY, "Couldn't read the photo; try again") from None
 
     by_name = {c.name.strip().lower(): c.id for c in categories}

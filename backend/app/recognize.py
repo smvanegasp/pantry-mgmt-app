@@ -190,7 +190,9 @@ def call_model(image: bytes, mime_type: str, prompt: str) -> dict:
     except (httpx.HTTPError, KeyError, IndexError, ValueError) as err:
         # Never include the request (it carries the key) in errors or logs.
         status_code = getattr(getattr(err, "response", None), "status_code", None)
-        raise RecognitionFailed(f"model call failed (status {status_code})") from None
+        raise RecognitionFailed(
+            f"model call failed ({type(err).__name__}, status {status_code})"
+        ) from None
 
 
 def recognize(image: bytes, mime_type: str, categories: list[str], today: date) -> ModelAnswer:

@@ -6,9 +6,20 @@ import warnings
 DEV_SECRET = "dev-only-insecure-secret"
 
 
+def on_aws() -> bool:
+    return bool(os.environ.get("AWS_LAMBDA_FUNCTION_NAME"))
+
+
+def origin_secret() -> str | None:
+    """Set on AWS: CloudFront sends it in X-Origin-Verify, so direct API Gateway calls are refused."""
+    return os.environ.get("ORIGIN_SECRET") or None
+
+
 def session_secret() -> str:
     secret = os.environ.get("SESSION_SECRET")
     if not secret:
+        if on_aws():
+            raise RuntimeError("SESSION_SECRET is missing; put it in SSM (scripts/set_aws_secrets.py)")
         warnings.warn("SESSION_SECRET is not set; using an insecure development secret")
         return DEV_SECRET
     return secret

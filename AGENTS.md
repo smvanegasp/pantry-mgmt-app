@@ -52,10 +52,13 @@ taps when you get home. Photos of products are read by an AI model to fill items
 | 5a | Product photos (resized on device, S3), thumbnails, viewer, camera-first button | #7 |
 | 5b | Photo recognition (Groq; OpenAI/Gemini supported), focus/zoom fixes after the camera | #8 |
 | 5c | "Stock your pantry": in-app camera, background reading, swipe review, fix list; one camera button + menu; foldable sections; dark mode; delete/discard photos | #9 |
-| **6** | **Deploy to AWS with Terraform. Next up, not started.** | |
+| 6 | AWS with Terraform: CloudFront, Lambda (image), HTTP API, DynamoDB, S3, SSM secrets; deploy script | #11 |
+| **6b** | **Deploy from GitHub Actions on merge to `main` (OIDC). Next up.** | |
 | 7 | Polish, domain, extras. See the backlog | |
 
-All features are built and tested locally. Nothing is deployed yet.
+**Live at <https://d3bg4vze5d4ttm.cloudfront.net>** (deployed 2026-10-19; Sergio passed the
+phone gate). Her real pantry there started empty. Local (Docker + ngrok) stays the place to
+test changes before they're merged; she should only use the AWS link.
 
 ## 4. Architecture
 
@@ -66,6 +69,7 @@ Phone ─ HTTPS ─▶ (local) ngrok ─▶ Vite dev server :5173 ─ /api proxy
                                                                         └─ Groq API (photo reading)
 (AWS, stage 6) CloudFront ─┬─ /*     → S3 (built frontend)
                            └─ /api/* → API Gateway → Lambda (same Docker image) → DynamoDB, S3, Groq
+                                       (+ X-Origin-Verify)               secrets from SSM /pantry/*
 ```
 
 - **Backend:** Python 3.12, FastAPI, boto3, httpx, itsdangerous. `backend/app/`.
@@ -80,12 +84,19 @@ Phone ─ HTTPS ─▶ (local) ngrok ─▶ Vite dev server :5173 ─ /api proxy
 ```
 AGENTS.md, CLAUDE.md, docs/BACKLOG.md
 docker-compose.yml          api, dynamodb (DynamoDB Local), s3 (adobe/s3mock), web (node:22 Vite)
-.github/workflows/ci.yml    pytest, vitest + build, docker build --target app
+.github/workflows/ci.yml    pytest, vitest + build, docker build --target app, terraform validate
 .mcp.json                   Playwright, AWS docs, Terraform MCP servers
 scripts/set_passcode.py     owner sets the passcode (hidden prompt) -> backend/.env
+scripts/set_aws_secrets.py  passcode hash, Groq key, session secret -> SSM (never printed)
+scripts/deploy.sh           image -> ECR, terraform apply, frontend -> S3, CloudFront invalidation
+infra/bootstrap/            Terraform state bucket (local state, applied once)
+infra/                      versions (S3 backend), data (DynamoDB, photos), api (ECR, Lambda,
+                            HTTP API, IAM), web (frontend bucket, CloudFront), outputs
 backend/
-  app/main.py               app + routers; creates table/bucket locally (AUTO_CREATE_TABLE=1)
+  app/main.py               app + routers; loads SSM; CloudFront-only middleware on AWS;
+                            creates table/bucket locally (AUTO_CREATE_TABLE=1)
   app/config.py             env config (SESSION_SECRET, PASSCODE_HASH, COOKIE_SECURE, limits)
+  app/ssm.py                SSM /pantry/* -> environment variables at startup (SSM_PREFIX)
   app/db.py                 DynamoDB single table: put/get/query/delete, copy_space, counters, TTL
   app/models.py             Pydantic models (Item, Package, Category, ListEntry, Settings, ...)
   app/stock.py              totals, is_low, normalize_packages (drop finished packages)
@@ -143,7 +154,7 @@ uploads per demo per day. Recognition: 20/demo, 300/owner, 1000 total per day.
 docker compose up -d --build          # app at http://localhost:5173 (API docs :8080/api/docs)
 ngrok http 5173                       # phone URL; Sergio's static domain is
                                       # https://thrower-diary-savanna.ngrok-free.dev
-cd backend && uv run pytest -q        # ~99 tests, moto, never calls real models
+cd backend && uv run pytest -q        # ~102 tests, moto, never calls real models
 cd frontend && npm test               # ~47 vitest tests
 cd frontend && npm run build          # typecheck + build
 cd frontend && npm run record-tutorials   # re-record welcome clips (stack running, ffmpeg)
@@ -196,32 +207,44 @@ cd frontend && npm run record-tutorials   # re-record welcome clips (stack runni
   twice; the camera button is "Add products").
 - **Shell gotchas (Windows, Git Bash):** `sed` breaks when the replacement contains `#` (the
   delimiter); Python heredoc scripts turn `\n` into real newlines inside strings. Use the edit
-  tool for those cases.
+  tool for those cases. With `MSYS_NO_PATHCONV=1` (needed for AWS CLI paths like `/pantry/`),
+  native Windows tools (curl, terraform, docker) need `C:/...` paths, not `/c/...`.
 
-## 8. Next: stage 6, deploy to AWS (Terraform)
+## 8. AWS deployment (stage 6)
 
-**Needed from Sergio first:**
-1. `winget install Hashicorp.Terraform`
-2. `aws configure --profile pantry` with an IAM access key, then **tell the agent only the
-   profile name and region**, never the keys.
-3. Later, put secrets in SSM himself, with commands the agent gives him (passcode hash,
-   session secret, Groq key).
+AWS profile **`pantry`** (IAM user `pantry-deployer`), region **us-east-1**. Terraform state is
+in `pantry-tfstate-<account>` (S3, native lockfile). The agent may run `terraform plan`, but
+**applies need Sergio's OK** (the permission system blocks blind `-auto-approve` applies).
 
-**Plan:**
-- `infra/bootstrap/`: an S3 bucket for Terraform state (native lockfile locking).
-- `infra/`: ECR repo; Lambda from the image's `lambda` stage; API Gateway HTTP API; DynamoDB
-  table (`pk`/`sk`, on-demand, TTL on `ttl`, point-in-time recovery); S3 photos bucket
-  (private, lifecycle rule expiring `sb-` objects after about 2 days); S3 frontend bucket;
-  CloudFront (`/*` → S3, `/api/*` → API Gateway, forwards the viewer address); SSM parameters
-  read by Lambda; IAM least privilege; API Gateway throttling.
-- Settings on Lambda: `COOKIE_SECURE=1`, `TABLE_NAME`, `PHOTOS_BUCKET`, the default per-IP demo
-  limit (20), and no `AUTO_CREATE_TABLE`. `ratelimit.client_ip` already reads CloudFront's
-  `cloudfront-viewer-address` header. Make sure CloudFront sends it.
-- A deploy script: build and push the image, apply Terraform, `npm run build`, sync to S3,
-  invalidate CloudFront.
-- Gate: open the CloudFront URL in a private window, try a demo, log in as owner elsewhere,
-  confirm her data is untouched, check the TTL on sandbox rows, and try photo reading end to end.
+**First deploy (Sergio runs these from Git Bash in the repo root):**
+```sh
+terraform -chdir=infra/bootstrap init && terraform -chdir=infra/bootstrap apply   # state bucket
+(cd backend && uv run python ../scripts/set_aws_secrets.py)                        # secrets -> SSM
+scripts/deploy.sh                                           # asks to approve two applies
+```
+**Every later deploy:** `scripts/deploy.sh` (append `-auto-approve` to skip the prompt).
+
+**How it works:**
+- Lambda runs the Dockerfile's `lambda` stage (x86_64, 1 GB, 30s). `deploy.sh` pushes
+  `pantry-api:latest`; Terraform pins its digest, so a new image updates the function. Images
+  must be built with `--provenance=false --sbom=false` (Lambda rejects attestation manifests).
+- **Secrets** (`PASSCODE_HASH`, `SESSION_SECRET`, `GROQ_API_KEY`) are SecureStrings under
+  `/pantry/`, loaded by `app/ssm.py` at cold start. Terraform never sees them. On Lambda the
+  API refuses to start without `SESSION_SECRET`. `set_aws_secrets.py` restarts the function
+  after changing them. Other settings are Lambda env vars in `infra/api.tf`.
+- **CloudFront** serves `/*` from the private web bucket (OAC) and `/api/*` from the HTTP API
+  with caching off and the `AllViewerExceptHostHeader` policy, which forwards cookies and
+  `CloudFront-Viewer-Address` (used by `ratelimit.client_ip`). It adds an `X-Origin-Verify`
+  header (random, generated by Terraform); the API returns 403 without it, so nobody can call
+  API Gateway directly and fake their IP.
+- API Gateway throttles at 20 req/s (burst 50) overall; app limits are in §4.
+- DynamoDB and the photos bucket have `prevent_destroy` (and the table deletion protection plus
+  point-in-time recovery). Demo photos (`sb-*`) expire after 2 days by lifecycle rule.
 - Her real pantry starts **empty** on AWS (local data isn't migrated unless Sergio asks), so
   demos show the sample pantry until she adds items.
+
+**Gate:** open the CloudFront URL in a private window, try a demo, log in as owner elsewhere,
+confirm her data is untouched, check the TTL on sandbox rows, check the per-IP counter uses the
+real viewer IP, and try photo reading end to end.
 
 After stage 6: see [docs/BACKLOG.md](docs/BACKLOG.md).

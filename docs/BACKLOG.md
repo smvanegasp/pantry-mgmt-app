@@ -5,9 +5,14 @@ Move an item to "Done" (with its PR) when it ships, and add new requests here as
 
 ## Next
 
-- **Stage 6, deploy to AWS with Terraform.** Full plan and prerequisites in AGENTS.md §8.
+- **Stage 6b, deploy from GitHub Actions** with OIDC (no long-lived AWS keys). Agreed plan:
+  every merge into `main` runs the tests, then builds and pushes the image, rolls Lambda to the
+  new digest, and uploads the frontend. Terraform (infrastructure) changes stay manual, applied
+  locally after Sergio sees the plan. Log in to public ECR in the workflow (the Lambda Web
+  Adapter image is rate-limited for anonymous CI pulls). Terraform creates the OIDC provider
+  and a deploy role limited to this app.
 
-## Up next after the deploy
+## Up next
 
 - **Re-record the welcome tutorial clips with the current UI.** The clips in
   `frontend/public/tutorials/` predate the newest UI: foldable sections, sectioned sorts, the
@@ -19,9 +24,11 @@ Move an item to "Done" (with its PR) when it ships, and add new requests here as
   dismissible note: "Made for your phone: scan to open it there, and to snap product photos",
   with a QR code of the current URL. Keep the copy short.
 - **App icon, favicon and "Add to Home Screen" (PWA).** There's currently no favicon (the
-  console shows a 404). Add a manifest and icons so it installs like an app.
+  console shows a 404 locally, 403 on AWS). Add a manifest and icons so it installs like an app.
 - **Custom domain** (Route 53 + ACM on CloudFront) once Sergio buys one.
-- **Deploy from GitHub Actions** with OIDC (no long-lived AWS keys), after the manual deploy works.
+- **Copy her local pantry to AWS?** Only if Sergio asks; she starts empty on AWS.
+- **Staging environment on AWS:** not now (one real user, point-in-time recovery covers
+  mistakes). Revisit if a broken deploy would really hurt.
 
 ## Ideas and improvements
 
@@ -49,4 +56,4 @@ Move an item to "Done" (with its PR) when it ships, and add new requests here as
 
 ## Done
 
-- Stage 0–5c: see the status table in AGENTS.md §3 (PRs #1–#9).
+- Stage 0–6: see the status table in AGENTS.md §3 (PRs #1–#11).

@@ -15,7 +15,7 @@ dependencies = [
 [dependency-groups]
 dev = [
     "pytest>=8",
-    "moto[dynamodb,s3]>=5.2.4",
+    "moto[dynamodb,s3,ssm]>=5.2.4",
 ]
 
 [tool.pytest.ini_options]

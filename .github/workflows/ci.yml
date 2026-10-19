@@ -40,3 +40,15 @@ jobs:
       # The "lambda" stage pulls from public ECR, which rate-limits shared CI runners;
       # it is built at deploy time instead.
       - run: docker build --target app ./backend
+
+  terraform:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: hashicorp/setup-terraform@v3
+      - run: terraform fmt -check -recursive infra
+      # No backend or AWS credentials in CI: this only checks the configuration.
+      - run: terraform -chdir=infra init -backend=false -input=false
+      - run: terraform -chdir=infra validate
+      - run: terraform -chdir=infra/bootstrap init -backend=false -input=false
+      - run: terraform -chdir=infra/bootstrap validate
