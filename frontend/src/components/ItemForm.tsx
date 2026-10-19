@@ -1,4 +1,4 @@
-import { CaretDown, CaretRight, Plus, Trash } from "@phosphor-icons/react";
+import { CaretDown, CaretRight, Plus } from "@phosphor-icons/react";
 import { useState, type FormEvent } from "react";
 
 import type { Category, ItemInput, Level, Mode, Package } from "../api";
@@ -9,6 +9,7 @@ import { CountStepper } from "./CountStepper";
 import { ExpiryPicker } from "./ExpiryPicker";
 import { InfoTip } from "./InfoTip";
 import { LevelPicker } from "./LevelPicker";
+import { PackageCarousel } from "./PackageCarousel";
 
 interface Props {
   initial?: ItemInput;
@@ -73,6 +74,7 @@ export function ItemForm({
       },
   );
   const [newCategory, setNewCategory] = useState<string | null>(null);
+  const [addedPackageId, setAddedPackageId] = useState<string | null>(null);
   const [showBuyWhen, setShowBuyWhen] = useState(
     initial?.buyWhenLevel != null || initial?.buyWhenCount != null,
   );
@@ -211,33 +213,17 @@ export function ItemForm({
       </div>
 
       {several ? (
-        <div className="space-y-3">
-          {item.packages.map((pkg, i) => (
-            <section
-              key={pkg.id}
-              aria-label={`Package ${i + 1}`}
-              className="rounded-xl border border-stone-200 p-3"
-            >
-              <div className="mb-3 flex items-center justify-between">
-                <h3 className="text-sm font-semibold text-stone-700">Package {i + 1}</h3>
-                <button
-                  type="button"
-                  onClick={() =>
-                    set(
-                      "packages",
-                      item.packages.filter((p) => p.id !== pkg.id),
-                    )
-                  }
-                  className="-my-1 inline-flex items-center gap-1 rounded-lg px-2 py-1 text-sm text-red-600"
-                  aria-label={`Remove package ${i + 1}`}
-                >
-                  <Trash size={16} weight="fill" aria-hidden /> Remove
-                </button>
-              </div>
-              <PackageFields mode={item.mode} pkg={pkg} onChange={setPackage} />
-            </section>
-          ))}
-        </div>
+        <PackageCarousel
+          packages={item.packages}
+          renderPackage={(pkg) => <PackageFields mode={item.mode} pkg={pkg} onChange={setPackage} />}
+          focusId={addedPackageId}
+          onRemove={(id) =>
+            set(
+              "packages",
+              item.packages.filter((p) => p.id !== id),
+            )
+          }
+        />
       ) : (
         <PackageFields mode={item.mode} pkg={item.packages[0]} onChange={setPackage} />
       )}
@@ -246,7 +232,11 @@ export function ItemForm({
         <div className="flex items-center gap-1.5">
           <button
             type="button"
-            onClick={() => set("packages", [...item.packages, newPackage()])}
+            onClick={() => {
+              const pkg = newPackage();
+              set("packages", [...item.packages, pkg]);
+              setAddedPackageId(pkg.id);
+            }}
             className="inline-flex items-center gap-1.5 rounded-lg border border-dashed border-stone-300 px-3 py-2 text-sm font-medium text-stone-700"
           >
             <Plus size={16} weight="bold" aria-hidden /> Add another package
