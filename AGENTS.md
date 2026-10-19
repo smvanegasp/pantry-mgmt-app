@@ -204,7 +204,8 @@ cd frontend && npm run record-tutorials   # re-record welcome clips (stack runni
   twice; the camera button is "Add products").
 - **Shell gotchas (Windows, Git Bash):** `sed` breaks when the replacement contains `#` (the
   delimiter); Python heredoc scripts turn `\n` into real newlines inside strings. Use the edit
-  tool for those cases.
+  tool for those cases. With `MSYS_NO_PATHCONV=1` (needed for AWS CLI paths like `/pantry/`),
+  native Windows tools (curl, terraform, docker) need `C:/...` paths, not `/c/...`.
 
 ## 8. AWS deployment (stage 6)
 
