@@ -127,14 +127,14 @@ const BUCKETS: Partial<Record<SortKey, { order: string[]; of: Bucketer }>> = {
     },
   },
   stock: {
-    order: ["Empty", "Running low", "About half or 2–3 left", "Plenty"],
+    order: ["Low", "Half or 2–3 left", "Plenty"],
     of: (item, settings) => {
-      const total = totalStock(item);
-      if (total === 0) return "Empty";
-      if (isLow(item, settings)) return "Running low";
+      // Low follows the item's own "add to list" point (¼ or 1 by default), empty included.
+      if (isLow(item, settings)) return "Low";
       // "How full" items count in percent (two half bags = 100); "how many" in units.
-      const middling = item.mode === "level" ? total <= 50 : total <= 3;
-      return middling ? "About half or 2–3 left" : "Plenty";
+      const total = totalStock(item);
+      const middling = item.mode === "level" ? total < 100 : total <= 3;
+      return middling ? "Half or 2–3 left" : "Plenty";
     },
   },
   updated: {
