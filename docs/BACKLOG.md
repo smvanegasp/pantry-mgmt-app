@@ -42,8 +42,8 @@ before Sergio flips the repo to public in GitHub's settings:
 - **Error alerts:** CloudWatch alarm on Lambda errors and API 5xx, emailing Sergio through SNS
   (Terraform; Sergio applies and confirms the subscription email). Free or pennies.
 - **Dependabot** for pip, npm and GitHub Actions, one grouped PR a week.
-- **Decision:** 34 commits carry Sergio's personal Gmail as author. Keep it (simplest) or
-  rewrite history to the GitHub noreply address (force-push to `main`, only on his explicit OK).
+- **Decided (2026-10-19):** Sergio is fine with his Gmail showing in commit history once the
+  repo is public. No history rewrite, no change to his git config.
 - **Fine to publish as is:** AWS account ID, CloudFront ID and URL (identifiers, not secrets;
   the deploy role only trusts `main` of this repo; CI never gets secrets on pull requests).
 - Last step: re-run the secrets scan, then Sergio makes the repo public.
