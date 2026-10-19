@@ -34,3 +34,8 @@ frontend/public/tutorials/*-failed.png
 
 # Other coding tools' local settings
 .codex/
+.claude/settings.local.json
+
+# ngrok tunnel password (copy ngrok-policy.example.yml); Terraform values like the alert email
+ngrok-policy.yml
+*.tfvars

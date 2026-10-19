@@ -15,13 +15,12 @@ list from what's running low, check things off in the store, and put groceries a
 taps when you get home. Photos of products are read by an AI model to fill items in.
 
 - **Owner:** Sergio (GitHub `smvanegasp`). It's a personal project for his website.
-- **Real user:** Sergio's wife, the only account. She logs in with a **4-digit passcode** via
+- **Real user:** Sergio's wife, the only account. She logs in with a **6-digit passcode** via
   the "I'm Sergio's wife" button. Sergio uses the same account.
 - **Everyone else** gets a **private demo sandbox**: a copy of her pantry (or a sample pantry if
   hers is empty) that expires after 24h and can never change her data. Visitors should get
   the full experience, photo AI included.
-- Repo: <https://github.com/smvanegasp/pantry-mgmt-app> (private). Local path:
-  `c:\Users\smvan\repos\pantry-mgmt-app` (Windows 11).
+- Repo: <https://github.com/smvanegasp/pantry-mgmt-app>. Sergio develops on Windows 11.
 
 ## 2. How we work (follow this)
 
@@ -59,7 +58,7 @@ taps when you get home. Photos of products are read by an AI model to fill items
 | 7a | Search behind an icon; Low / Normal / Plenty stock sections; "how many" items split by expiration date; "Track by" locked on saved items | #15 |
 | 7b | No duplicate items: photo reading knows the pantry's names; similar-item check when adding or stocking up | #16 |
 | 7c | Desktop QR popup, personal welcome note, app icon / PWA, re-recorded tutorial clips | #17 |
-| **7d** | **Hardening (6-digit passcode, no API docs on AWS, ngrok auth, alerts, Dependabot), then make the repo public. Next up.** | |
+| 7d | Hardening: 6-digit passcode with 3-try pause that hides the login button, email alerts, no API docs on AWS, ngrok password, Dependabot | #18 |
 | 7e | Custom domain on CloudFront (ACM + DNS), swap the URL in the deploy workflow and docs | |
 
 **Live at <https://d3bg4vze5d4ttm.cloudfront.net>** (deployed 2026-10-19; Sergio passed the
@@ -99,7 +98,8 @@ scripts/deploy.sh           manual deploy: image -> ECR, terraform apply, fronte
 scripts/upload_frontend.sh  frontend/dist -> S3 + CloudFront invalidation (both deploy paths)
 infra/bootstrap/            Terraform state bucket (local state, applied once)
 infra/                      versions (S3 backend), data (DynamoDB, photos), api (ECR, Lambda,
-                            HTTP API, IAM), web (frontend bucket, CloudFront), outputs
+                            HTTP API, IAM), web (frontend bucket, CloudFront), github (OIDC
+                            deploy role), monitoring (SNS email alarms), outputs
 backend/
   app/main.py               app + routers; loads SSM; CloudFront-only middleware on AWS;
                             creates table/bucket locally (AUTO_CREATE_TABLE=1)
@@ -153,17 +153,18 @@ frontend/
 | Recognition | `POST /recognize {photoKey}` → `{isProduct, name, categoryId, newCategoryName, mode, count, expiresOn}` |
 
 Limits: demos start at most 20/hour per IP (configurable `SANDBOX_LIMIT_PER_IP`; 1000 locally)
-and 500/hour total. Login: 5 wrong per IP per 15 min, 20 wrong per hour globally. Photos: 40
+and 500/hour total. Login: 3 wrong per IP pause owner login there for up to an hour (`GET /session` then
+reports `ownerLoginEnabled: false`, hiding the button), 10 wrong per hour globally. Photos: 40
 uploads per demo per day. Recognition: 20/demo, 300/owner, 1000 total per day.
 
 ## 5. Run, test, preview
 
 ```sh
 docker compose up -d --build          # app at http://localhost:5173 (API docs :8080/api/docs)
-ngrok http 5173                       # phone URL; Sergio's static domain is
-                                      # https://thrower-diary-savanna.ngrok-free.dev
-cd backend && uv run pytest -q        # ~102 tests, moto, never calls real models
-cd frontend && npm test               # ~47 vitest tests
+ngrok http 5173 --traffic-policy-file ngrok-policy.yml   # phone URL (Sergio's static
+                                      # ngrok domain; password from ngrok-policy.yml)
+cd backend && uv run pytest -q        # ~106 tests, moto, never calls real models
+cd frontend && npm test               # ~56 vitest tests
 cd frontend && npm run build          # typecheck + build
 cd frontend && npm run record-tutorials   # re-record welcome clips (stack running, ffmpeg)
 ```
@@ -173,6 +174,10 @@ cd frontend && npm run record-tutorials   # re-record welcome clips (stack runni
   (`docker compose up -d --build api`) and restart `web` after frontend dependency changes.
 - If ngrok says the endpoint is already online, an old tunnel is still running; the same URL
   still works.
+- The tunnel is password-protected: `ngrok-policy.yml` (git-ignored, copied from
+  `ngrok-policy.example.yml`) holds Sergio's user and password. Locally every request reaches
+  the API from the Vite container's IP, so login lockouts there apply to every device at
+  once; clear `COUNTER#login-fail*` rows in DynamoDB Local after testing them.
 
 ## 6. Secrets and safety rules (important)
 
@@ -256,6 +261,13 @@ depends on it; the workflow never applies Terraform. Because both paths deploy t
   header (random, generated by Terraform); the API returns 403 without it, so nobody can call
   API Gateway directly and fake their IP.
 - API Gateway throttles at 20 req/s (burst 50) overall; app limits are in §4.
+- **Alerts** (`infra/monitoring.tf`) email `var.alert_email`, set in `infra/terraform.tfvars`
+  (git-ignored; `alert_email = "..."`), through SNS: Lambda errors, API 5xx (5+ in 5 min),
+  photo reading failing (3+ in 15 min, from the "Photo reading failed" log line) and any
+  wrong owner passcode (the "Wrong owner passcode" log line). Keep those log lines stable.
+- To change the passcode: `cd backend && uv run python ../scripts/set_passcode.py` (local),
+  then `uv run python ../scripts/set_aws_secrets.py` (copies the hash to SSM and restarts
+  the API).
 - DynamoDB and the photos bucket have `prevent_destroy` (and the table deletion protection plus
   point-in-time recovery). Demo photos (`sb-*`) expire after 2 days by lifecycle rule.
 - Her real pantry starts **empty** on AWS (local data isn't migrated unless Sergio asks), so

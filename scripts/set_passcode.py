@@ -1,4 +1,4 @@
-"""Set the owner's 4-digit passcode for local development.
+"""Set the owner's 6-digit passcode for local development.
 
 Run from the repo root:  cd backend && uv run python ../scripts/set_passcode.py
 
@@ -28,9 +28,9 @@ def read_env() -> dict[str, str]:
 
 
 def main() -> None:
-    passcode = getpass.getpass("New 4-digit passcode (hidden): ")
-    if not re.fullmatch(r"\d{4}", passcode):
-        sys.exit("The passcode must be exactly 4 digits.")
+    passcode = getpass.getpass("New 6-digit passcode (hidden): ")
+    if not re.fullmatch(r"\d{6}", passcode):
+        sys.exit("The passcode must be exactly 6 digits.")
     if getpass.getpass("Repeat it: ") != passcode:
         sys.exit("The passcodes don't match.")
 
