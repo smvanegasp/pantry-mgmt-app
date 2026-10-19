@@ -75,7 +75,8 @@ export function PhotoField({
   name: string;
   onChange: (photoKey: string | null) => void;
 }) {
-  const input = useRef<HTMLInputElement>(null);
+  const camera = useRef<HTMLInputElement>(null);
+  const library = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -91,18 +92,28 @@ export function PhotoField({
       setError((err as Error).message);
     } finally {
       setUploading(false);
-      if (input.current) input.current.value = "";
+      for (const el of [camera.current, library.current]) if (el) el.value = "";
     }
   }
 
   return (
     <div>
+      {/* capture="environment" opens the rear camera directly instead of the system menu. */}
       <input
-        ref={input}
+        ref={camera}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        className="hidden"
+        aria-label="Take item photo"
+        onChange={(e) => choose(e.target.files?.[0])}
+      />
+      <input
+        ref={library}
         type="file"
         accept="image/*"
         className="hidden"
-        aria-label="Item photo"
+        aria-label="Choose item photo"
         onChange={(e) => choose(e.target.files?.[0])}
       />
       <div className="flex items-center gap-3">
@@ -116,17 +127,24 @@ export function PhotoField({
         <div className="flex flex-col items-start gap-1">
           <button
             type="button"
-            onClick={() => input.current?.click()}
+            onClick={() => camera.current?.click()}
             disabled={uploading}
             className="inline-flex items-center gap-1.5 rounded-lg border border-stone-300 px-3 py-2 text-sm font-medium text-stone-700 disabled:opacity-50"
           >
             <Camera size={16} weight="fill" aria-hidden />
-            {uploading ? "Uploading…" : photoKey ? "Change photo" : "Add photo"}
+            {uploading ? "Uploading…" : photoKey ? "Retake photo" : "Take photo"}
           </button>
-          {photoKey && !uploading && (
-            <button type="button" onClick={() => onChange(null)} className="px-1 text-sm text-stone-500">
-              Remove photo
-            </button>
+          {!uploading && (
+            <div className="flex gap-3 px-1 text-sm text-stone-500">
+              <button type="button" onClick={() => library.current?.click()}>
+                Choose from library
+              </button>
+              {photoKey && (
+                <button type="button" onClick={() => onChange(null)}>
+                  Remove
+                </button>
+              )}
+            </div>
           )}
         </div>
       </div>
