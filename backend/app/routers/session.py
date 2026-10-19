@@ -44,14 +44,14 @@ def get_session(request: Request) -> SessionInfo:
     return _info(read_session(request))
 
 
-def _start_sandbox(request: Request, response: Response) -> SessionInfo:
+def _start_sandbox(request: Request, response: Response, sample: bool = False) -> SessionInfo:
     ip = ratelimit.client_ip(request)
     if (
         ratelimit.hit(f"sandbox-ip#{ip}", 3600) > SANDBOXES_PER_IP_PER_HOUR
         or ratelimit.hit("sandbox-all", 3600) > SANDBOXES_PER_HOUR
     ):
         raise ratelimit.too_many("Too many demos started; try again in a bit")
-    session = Session(role="guest", space=create_sandbox())
+    session = Session(role="guest", space=create_sandbox(sample=sample))
     write_session(response, session)
     return _info(session)
 
@@ -66,9 +66,12 @@ def start_guest(request: Request, response: Response) -> SessionInfo:
 
 
 @router.post("/guest/reset")
-def reset_guest(request: Request, response: Response) -> SessionInfo:
-    """Throw away this demo's changes and start over from a fresh copy."""
-    return _start_sandbox(request, response)
+def reset_guest(request: Request, response: Response, sample: bool = False) -> SessionInfo:
+    """Throw away this demo's changes and start over from a fresh copy.
+
+    `?sample=true` starts from the sample pantry instead (used to record the tutorials).
+    """
+    return _start_sandbox(request, response, sample=sample)
 
 
 @router.post("/owner")

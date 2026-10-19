@@ -95,8 +95,8 @@ def test_guest_gets_a_copy_of_the_owners_pantry(client, anon):
 
 def test_guest_changes_never_reach_the_owner(client, guest):
     client.post("/api/items", json={"name": "Rice"})
-    # The guest's sandbox was copied before Rice existed.
-    assert names(guest) == []
+    # The guest's sandbox was created before Rice existed.
+    assert "Rice" not in names(guest)
 
     guest_item = guest.post("/api/items", json={"name": "Guest snack"}).json()
     guest.put("/api/settings", json={"buyWhenLevel": 75, "buyWhenCount": 5})
@@ -120,7 +120,7 @@ def test_guests_are_isolated_from_each_other(guest):
     other = TestClient(app)
     other.post("/api/session/guest")
     guest.post("/api/items", json={"name": "Mine"})
-    assert names(other) == []
+    assert "Mine" not in names(other)
 
 
 def test_sandbox_rows_expire_and_owner_rows_do_not(client, guest):
@@ -134,10 +134,35 @@ def test_sandbox_rows_expire_and_owner_rows_do_not(client, guest):
             assert int(row["ttl"]) > time.time()
 
 
+def test_demo_uses_sample_pantry_while_owner_pantry_is_empty(anon):
+    anon.post("/api/session/guest")
+    items = anon.get("/api/items").json()
+    assert len(items) > 10
+    assert {"Basmati rice", "Black beans", "Milk"} <= {i["name"] for i in items}
+    assert len(anon.get("/api/categories").json()) >= 5
+    # The sample shows off the features: low items, expiring items, multi-package items.
+    assert any(len(i["packages"]) > 1 for i in items)
+    assert len(anon.post("/api/list/generate").json()["added"]) >= 3
+
+
+def test_sample_pantry_never_touches_owner_space(client, anon):
+    anon.post("/api/session/guest")
+    assert client.get("/api/items").json() == []
+    assert client.get("/api/categories").json() == []
+
+
+def test_demo_can_start_from_sample_even_when_owner_has_items(client, anon):
+    client.post("/api/items", json={"name": "Her rice"})
+    anon.post("/api/session/guest/reset?sample=true")
+    item_names = names(anon)
+    assert "Her rice" not in item_names
+    assert "Basmati rice" in item_names
+
+
 def test_starting_a_demo_twice_keeps_the_same_sandbox(guest):
     guest.post("/api/items", json={"name": "Mine"})
     guest.post("/api/session/guest")
-    assert names(guest) == ["Mine"]
+    assert "Mine" in names(guest)
 
 
 def test_reset_demo_starts_from_a_fresh_copy(client, guest):

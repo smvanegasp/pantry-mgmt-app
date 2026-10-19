@@ -9,6 +9,7 @@ import uuid
 
 from app import db
 from app.config import SANDBOX_HOURS
+from app.sample_data import seed_sample
 
 OWNER_SPACE = "main"
 PREFIX = "sb-"
@@ -29,9 +30,15 @@ def is_expired(space: str) -> bool:
     return expiry is not None and expiry <= time.time()
 
 
-def create_sandbox() -> str:
-    """Copy the owner's current pantry into a new sandbox and return its id."""
+def create_sandbox(sample: bool = False) -> str:
+    """Copy the owner's current pantry into a new sandbox and return its id.
+
+    Uses the sample pantry instead when asked to, or when the owner hasn't added anything yet.
+    """
     expiry = int(time.time()) + SANDBOX_HOURS * 3600
     space = f"{PREFIX}{expiry}-{uuid.uuid4().hex}"
-    db.copy_space(OWNER_SPACE, space)
+    if not sample and db.query(OWNER_SPACE, "ITEM#"):
+        db.copy_space(OWNER_SPACE, space)
+    else:
+        seed_sample(space)
     return space
