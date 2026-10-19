@@ -1,7 +1,8 @@
-import { Basket, CameraPlus, Plus } from "@phosphor-icons/react";
+import { Basket, Camera, CameraPlus, CaretDown, CaretRight, WarningCircle } from "@phosphor-icons/react";
 import { useState } from "react";
 
 import type { Item, ItemInput } from "../api";
+import { AddMenu } from "../components/AddMenu";
 import { BottomSheet } from "../components/BottomSheet";
 import { ItemCard } from "../components/ItemCard";
 import { ItemForm } from "../components/ItemForm";
@@ -19,6 +20,7 @@ import {
 import {
   filterItems,
   groupItems,
+  isLow,
   type ItemQuery,
   type SortKey,
   type StatusFilter,
@@ -45,9 +47,12 @@ export function PantryPage() {
   const list = useList();
   const [sheet, setSheet] = useState<Sheet>(null);
   const [stockingUp, setStockingUp] = useState(false);
+  const [addMenu, setAddMenu] = useState(false);
   const [search, setSearch] = useState("");
   // Filters and sort are remembered between visits; the search text is not.
   const [view, setView] = usePersistentState<ViewPrefs>("pantry.view", DEFAULT_VIEW);
+  // Folded category sections, remembered between visits.
+  const [folded, setFolded] = usePersistentState<{ ids: string[] }>("pantry.folded", { ids: [] });
 
   const allItems = items.data ?? [];
   const allCategories = categories.data ?? [];
@@ -76,6 +81,11 @@ export function PantryPage() {
   const counts = { all: countFor("all"), low: countFor("low"), expiring: countFor("expiring") };
 
   const filtered = search.trim() !== "" || view.status !== "all" || categoryId !== null;
+  const searching = search.trim() !== "";
+  const grouped = groups.some((g) => g.name !== null);
+  const allFolded = grouped && groups.every((g) => folded.ids.includes(g.key));
+  const toggleFold = (key: string) =>
+    setFolded({ ids: folded.ids.includes(key) ? folded.ids.filter((k) => k !== key) : [...folded.ids, key] });
 
   const close = () => {
     setSheet(null);
@@ -127,7 +137,13 @@ export function PantryPage() {
           >
             <CameraPlus size={22} weight="fill" aria-hidden /> Stock your pantry with photos
           </button>
-          <p className="mt-3 text-sm">Or tap + to add one item at a time.</p>
+          <button
+            type="button"
+            onClick={() => setSheet({ kind: "new" })}
+            className="mt-3 block w-full text-sm font-medium text-emerald-700"
+          >
+            Or add one item at a time
+          </button>
         </div>
       )}
 
@@ -144,51 +160,90 @@ export function PantryPage() {
         </div>
       )}
 
-      {filtered && groups.length > 0 && (
-        <p className="mb-3 text-sm text-stone-500">
-          Showing {groups.reduce((n, g) => n + g.items.length, 0)} of {total}
-        </p>
+      {groups.length > 0 && (filtered || grouped) && (
+        <div className="mb-3 flex items-center justify-between text-sm text-stone-500">
+          <span>{filtered && `Showing ${groups.reduce((n, g) => n + g.items.length, 0)} of ${total}`}</span>
+          {grouped && !searching && (
+            <button
+              type="button"
+              onClick={() => setFolded({ ids: allFolded ? [] : groups.map((g) => g.key) })}
+              className="font-medium text-emerald-700"
+            >
+              {allFolded ? "Expand all" : "Collapse all"}
+            </button>
+          )}
+        </div>
       )}
 
       <div className="space-y-6">
-        {groups.map((group) => (
-          <section key={group.key}>
-            {group.name !== null && (
-              <h2 className="mb-2 text-sm font-semibold tracking-wide text-stone-500 uppercase">
-                {group.name} <span className="font-normal">· {group.items.length}</span>
-              </h2>
-            )}
-            <ul className="space-y-2">
-              {group.items.map((item) => (
-                <ItemCard
-                  key={item.id}
-                  item={item}
-                  settings={settings}
-                  onList={onList.has(item.id)}
-                  onEdit={() => setSheet({ kind: "edit", item })}
-                />
-              ))}
-            </ul>
-          </section>
-        ))}
+        {groups.map((group) => {
+          // Searching shows every match, even in folded sections.
+          const open = group.name === null || searching || !folded.ids.includes(group.key);
+          const low = group.items.filter((i) => isLow(i, settings)).length;
+          return (
+            <section key={group.key}>
+              {group.name !== null && (
+                <h2 className="mb-2">
+                  <button
+                    type="button"
+                    onClick={() => toggleFold(group.key)}
+                    aria-expanded={open}
+                    className="flex w-full items-center gap-1.5 py-1 text-left text-sm font-semibold tracking-wide text-stone-500 uppercase"
+                  >
+                    {open ? (
+                      <CaretDown size={14} weight="bold" aria-hidden />
+                    ) : (
+                      <CaretRight size={14} weight="bold" aria-hidden />
+                    )}
+                    {group.name} <span className="font-normal">· {group.items.length}</span>
+                    {!open && low > 0 && (
+                      <span className="ml-auto inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium tracking-normal text-amber-800 normal-case">
+                        <WarningCircle size={12} weight="fill" aria-hidden /> {low} low
+                      </span>
+                    )}
+                  </button>
+                </h2>
+              )}
+              {open && (
+                <ul className="space-y-2">
+                  {group.items.map((item) => (
+                    <ItemCard
+                      key={item.id}
+                      item={item}
+                      settings={settings}
+                      onList={onList.has(item.id)}
+                      onEdit={() => setSheet({ kind: "edit", item })}
+                    />
+                  ))}
+                </ul>
+              )}
+            </section>
+          );
+        })}
       </div>
 
       <button
         type="button"
-        onClick={() => setStockingUp(true)}
-        className="fixed right-6 bottom-[calc(9.5rem+env(safe-area-inset-bottom))] z-30 inline-flex h-12 w-12 items-center justify-center rounded-full bg-white text-emerald-700 shadow-xl shadow-stone-900/30 ring-1 ring-stone-200 active:bg-stone-100"
-        aria-label="Stock your pantry with photos"
+        onClick={() => setAddMenu(true)}
+        className="fixed right-5 bottom-[calc(5rem+env(safe-area-inset-bottom))] z-30 inline-flex h-14 w-14 items-center justify-center rounded-full bg-emerald-600 text-white shadow-[0_6px_16px_rgba(0,0,0,0.35),0_2px_4px_rgba(0,0,0,0.25)] active:bg-emerald-700"
+        aria-label="Add to pantry"
       >
-        <CameraPlus size={24} weight="fill" aria-hidden />
+        <Camera size={28} weight="fill" aria-hidden />
       </button>
-      <button
-        type="button"
-        onClick={() => setSheet({ kind: "new" })}
-        className="fixed right-5 bottom-[calc(5rem+env(safe-area-inset-bottom))] z-30 inline-flex h-14 w-14 items-center justify-center rounded-full bg-emerald-600 text-white shadow-xl shadow-stone-900/30 ring-4 ring-white active:bg-emerald-700"
-        aria-label="Add item"
-      >
-        <Plus size={28} weight="bold" aria-hidden />
-      </button>
+
+      {addMenu && (
+        <AddMenu
+          onClose={() => setAddMenu(false)}
+          onStockUp={() => {
+            setAddMenu(false);
+            setStockingUp(true);
+          }}
+          onAddOne={() => {
+            setAddMenu(false);
+            setSheet({ kind: "new" });
+          }}
+        />
+      )}
 
       {stockingUp && <StockUpSheet onClose={() => setStockingUp(false)} />}
 
