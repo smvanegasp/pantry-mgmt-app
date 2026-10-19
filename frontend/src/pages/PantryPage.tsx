@@ -226,7 +226,7 @@ export function PantryPage() {
         type="button"
         onClick={() => setAddMenu(true)}
         className="fixed right-5 bottom-[calc(5rem+env(safe-area-inset-bottom))] z-30 inline-flex h-14 w-14 items-center justify-center rounded-full bg-emerald-600 text-white shadow-[0_6px_16px_rgba(0,0,0,0.35),0_2px_4px_rgba(0,0,0,0.25)] active:bg-emerald-700"
-        aria-label="Add to pantry"
+        aria-label="Add products"
       >
         <Camera size={28} weight="fill" aria-hidden />
       </button>
