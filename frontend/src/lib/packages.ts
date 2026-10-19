@@ -65,7 +65,10 @@ export function packageSummary(item: Item): string | null {
   const n = item.packages.length;
   if (n < 2) return null;
   const total = totalStock(item);
-  return `${n} packages · ${item.mode === "level" ? formatLevelTotal(total) : total} total`;
+  // "How many" items split by expiration date rather than by package.
+  return item.mode === "level"
+    ? `${n} packages · ${formatLevelTotal(total)} total`
+    : `${n} dates · ${total} total`;
 }
 
 export function newPackage(): Package {

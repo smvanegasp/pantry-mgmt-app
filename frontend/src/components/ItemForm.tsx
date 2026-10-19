@@ -1,4 +1,4 @@
-import { CaretDown, CaretRight, Plus, Sparkle } from "@phosphor-icons/react";
+import { CaretDown, CaretRight, Plus, Sparkle, WarningCircle } from "@phosphor-icons/react";
 import { useState, type FormEvent } from "react";
 
 import { api, type Category, type ItemInput, type Level, type Mode, type Package, type Suggestion } from "../api";
@@ -14,6 +14,8 @@ import { PhotoField } from "./Photo";
 
 interface Props {
   initial?: ItemInput;
+  /** Saved items: "Track by" sits behind a Change link so it isn't switched by accident. */
+  lockMode?: boolean;
   categories: Category[];
   submitLabel: string;
   submitting: boolean;
@@ -106,8 +108,11 @@ function PackageFields({
   );
 }
 
+const MODE_LABEL: Record<Mode, string> = { level: "How full", count: "How many" };
+
 export function ItemForm({
   initial,
+  lockMode = false,
   categories,
   submitLabel,
   submitting,
@@ -129,6 +134,7 @@ export function ItemForm({
   );
   const [newCategory, setNewCategory] = useState<string | null>(null);
   const [addedPackageId, setAddedPackageId] = useState<string | null>(null);
+  const [changingMode, setChangingMode] = useState(false);
   const [showBuyWhen, setShowBuyWhen] = useState(
     initial?.buyWhenLevel != null || initial?.buyWhenCount != null,
   );
@@ -138,13 +144,21 @@ export function ItemForm({
 
   /** Fill the form from what the photo shows; the user reviews it before saving. */
   function apply(s: Suggestion) {
+    // A saved item keeps how it's tracked and how much there is; the photo only fills the rest.
+    const keepStock = lockMode;
     setItem((prev) => ({
       ...prev,
       name: s.name || prev.name,
       categoryId: s.categoryId ?? prev.categoryId,
-      mode: s.mode,
+      mode: keepStock ? prev.mode : s.mode,
       packages: prev.packages.map((p, i) =>
-        i === 0 ? { ...p, count: s.count ?? p.count, expiresOn: s.expiresOn ?? p.expiresOn } : p,
+        i === 0
+          ? {
+              ...p,
+              count: keepStock ? p.count : (s.count ?? p.count),
+              expiresOn: s.expiresOn ?? p.expiresOn,
+            }
+          : p,
       ),
     }));
     // Offer to create the suggested category instead of silently creating it.
@@ -296,22 +310,41 @@ export function ItemForm({
             <b>How many</b> for things you count (cans, eggs, bottles).
           </InfoTip>
         </span>
-        <div className="grid grid-cols-2 gap-1 rounded-lg bg-stone-100 p-1" role="radiogroup">
-          {(["level", "count"] as Mode[]).map((mode) => (
+        {lockMode && !changingMode ? (
+          <div className="flex items-center justify-between rounded-lg bg-stone-100 px-3 py-2">
+            <span className="font-medium">{MODE_LABEL[item.mode]}</span>
             <button
-              key={mode}
               type="button"
-              role="radio"
-              aria-checked={item.mode === mode}
-              onClick={() => set("mode", mode)}
-              className={`rounded-md py-2 font-medium ${
-                item.mode === mode ? "bg-white shadow-sm" : "text-stone-500"
-              }`}
+              onClick={() => setChangingMode(true)}
+              className="text-sm font-medium text-emerald-700"
             >
-              {mode === "level" ? "How full" : "How many"}
+              Change
             </button>
-          ))}
-        </div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-1 rounded-lg bg-stone-100 p-1" role="radiogroup">
+            {(["level", "count"] as Mode[]).map((mode) => (
+              <button
+                key={mode}
+                type="button"
+                role="radio"
+                aria-checked={item.mode === mode}
+                onClick={() => set("mode", mode)}
+                className={`rounded-md py-2 font-medium ${
+                  item.mode === mode ? "bg-white shadow-sm" : "text-stone-500"
+                }`}
+              >
+                {MODE_LABEL[mode]}
+              </button>
+            ))}
+          </div>
+        )}
+        {lockMode && item.mode !== initial?.mode && (
+          <p className="mt-2 flex items-start gap-1.5 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800">
+            <WarningCircle size={18} weight="fill" className="mt-px shrink-0" aria-hidden />
+            Amounts work differently now. Check how much you have below before saving.
+          </p>
+        )}
       </div>
 
       {several ? (
@@ -319,6 +352,7 @@ export function ItemForm({
           packages={item.packages}
           renderPackage={(pkg) => <PackageFields mode={item.mode} pkg={pkg} onChange={setPackage} />}
           focusId={addedPackageId}
+          label={item.mode === "level" ? "Package" : "Expiration date"}
           onRemove={(id) =>
             set(
               "packages",
@@ -341,13 +375,22 @@ export function ItemForm({
             }}
             className="inline-flex items-center gap-1.5 rounded-lg border border-dashed border-stone-300 px-3 py-2 text-sm font-medium text-stone-700"
           >
-            <Plus size={16} weight="bold" aria-hidden /> Add another package
+            <Plus size={16} weight="bold" aria-hidden />{" "}
+            {item.mode === "level" ? "Add another package" : "Add another expiration date"}
           </button>
-          <InfoTip title="Packages">
-            Have an open bag and a spare, or cans that expire on different dates? Add each as a
-            package. The grocery list looks at the <b>total</b>, and the quick buttons on the
-            pantry card change the open (or first-to-expire) package.
-          </InfoTip>
+          {item.mode === "level" ? (
+            <InfoTip title="Packages">
+              Have an open bag and a spare? Add each as a package with how full it is. The grocery
+              list looks at the <b>total</b>, and the quick buttons on the pantry card change the
+              open (least full) one.
+            </InfoTip>
+          ) : (
+            <InfoTip title="Expiration dates">
+              Bought some at different times? Add how many expire on each date, like 6 eggs on
+              Nov 2 and 6 more on Nov 16. The grocery list looks at the <b>total</b>, and the
+              quick buttons on the pantry card use up the ones that expire first.
+            </InfoTip>
+          )}
         </div>
       )}
 

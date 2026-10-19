@@ -169,7 +169,7 @@ describe("sections for time and stock sorts", () => {
     ];
     expect(sections("stock", list)).toEqual([
       ["Low", ["Gone", "One can", "Quarter"]],
-      ["Half or 2–3 left", ["Half", "Two cans", "Three cans", "Three quarters"]],
+      ["Normal", ["Half", "Two cans", "Three cans", "Three quarters"]],
       ["Plenty", ["Four cans", "Full"]],
     ]);
   });

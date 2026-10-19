@@ -48,7 +48,8 @@ export function PantryControls({ query, onChange, categories, total, counts }: P
             onKeyDown={(e) => e.key === "Escape" && closeSearch()}
             placeholder={`Search ${total} item${total === 1 ? "" : "s"}`}
             aria-label="Search items"
-            className="w-full rounded-full border border-emerald-600 bg-white py-1.5 pr-11 pl-4 text-base"
+            // The emerald border already shows it's active; no browser focus outline on top.
+            className="w-full rounded-full border border-emerald-600 bg-white py-1.5 pr-11 pl-4 text-base outline-none"
           />
           <button
             type="button"
