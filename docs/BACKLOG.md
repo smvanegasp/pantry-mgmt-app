@@ -5,25 +5,33 @@ Move an item to "Done" (with its PR) when it ships, and add new requests here as
 Each stage ends at the usual gate: tests, a Playwright check at 390×844 in a sample demo
 (light and dark), Sergio's phone test through ngrok, then a PR. Merging deploys.
 
-## Next: stage 7a, search icon and stock sections
+## In review: stage 7a, search icon, stock sections, safer item editing
 
-- **Search behind an icon.** The always-visible search box takes the top spot, but filters are
-  used more. In `frontend/src/components/PantryControls.tsx`:
-  - Replace the box with a Phosphor `MagnifyingGlass` (fill) icon button at the end of the
-    filter chips row, next to the InfoTip.
-  - Tapping it swaps the chips row for the search field (focused, keyboard open) and an X that
-    clears the search and closes the field.
-  - The field stays open while there's search text. "Clear filters" closes it too.
-  - Search text stays unsaved, as today (`PantryPage.tsx`).
-- **Three stock sections in the "Lowest stock" sort.** Decided with Sergio: change only the
-  sort sections (`BUCKETS.stock` in `frontend/src/lib/items.ts`). The Low filter, the Low
-  badge and the thresholds stay as they are. The sections:
-  - **Low:** the item's "buy when" rule (`isLow`, ¼ or 1 by default); includes empty items.
-  - **Half:** a level total under full, or 2–3 units.
-  - **Plenty:** full or more, or 4+ units.
-  Update `items.test.ts`.
+Branch `stage-7a-search-stock`, passed Sergio's phone test.
+- Search behind a magnifier at the end of the filter row (no focus outline; X or Escape closes).
+- "Lowest stock" sections: **Low / Normal / Plenty** (Low filter, badge and thresholds unchanged).
+- "How many" items split by **expiration date** instead of "packages".
+- Saved items show "Track by" with a **Change** link plus a warning when switched; reading a
+  photo on a saved item no longer changes its mode or count.
 
-## Then: stage 7b, welcome story, app icon, new clips
+## Next: stage 7b, no duplicate items
+
+Sergio: "super important" not to end up with two entries for the same product. Today
+"Stock your pantry" merges a photo into an existing item only on an exact name match
+(`findExisting` in `frontend/src/lib/stockup.ts`, case- and accent-insensitive), so
+"Kirkland black beans" next to "Black beans" becomes a duplicate. "Add one product" doesn't
+check at all.
+- **Let the model pick existing names:** send the pantry's item names with the photo (like the
+  category list in `backend/app/recognize.py`) and ask it to return an existing name when it's
+  the same product.
+- **Similar-item check before saving:** reuse the fuzzy matcher (`frontend/src/lib/search.ts`)
+  to find close names in both flows. Show "You already have *Black beans*" with **Add to it**
+  (adds an expiration date or package to that item) or **Keep as new**.
+- In the stock-up swipe review, cards that will merge already say "Adds to …"; make the fuzzy
+  matches show the same, with a way to keep it separate.
+- Tests for the matcher (similar vs. different products, e.g. "Milk" vs. "Almond milk").
+
+## Then: stage 7c, welcome story, app icon, new clips
 
 - **A personal note on the welcome page**, above the clips: a small card with an "SV" initials
   avatar. Draft copy for Sergio to edit: "Hi, I'm Sergio. I built this app for my wife, so we
@@ -32,11 +40,11 @@ Each stage ends at the usual gate: tests, a Playwright check at 390×844 in a sa
 - **App icon, favicon and "Add to Home Screen" (PWA).** There's no favicon (404 locally, 403 on
   AWS). Add a basket icon (SVG + PNG sizes), apple-touch-icon and a manifest in
   `frontend/index.html` / `frontend/public` so it installs like an app.
-- **Re-record the tutorial clips, last,** so they show 7a's search and sections and the new
-  welcome note. Update the steps in `frontend/scripts/record-tutorials.mjs`, add a fifth clip
+- **Re-record the tutorial clips, last,** so they show 7a's search and sections, 7b's
+  duplicate check and the new welcome note. Update the steps in `frontend/scripts/record-tutorials.mjs`, add a fifth clip
   for **"Stock your pantry"** (snap, swipe, done), and update the captions in `WelcomePage.tsx`.
 
-## Then: stage 7c, hardening and making the repo public
+## Then: stage 7d, hardening and making the repo public
 
 A read-only scan (2026-10-19) of every tracked file and the full history (all branches) found
 **no keys or secrets**; only placeholders and test values. These are the items to finish
@@ -64,12 +72,23 @@ before Sergio flips the repo to public in GitHub's settings:
   the deploy role only trusts `main` of this repo; CI never gets secrets on pull requests).
 - Last step: re-run the secrets scan, then Sergio makes the repo public.
 
+## Then: stage 7e, custom domain (one of the last steps)
+
+Sergio has a domain. Needs from him: the domain name and where its DNS lives (registrar or
+Route 53).
+- Terraform: an ACM certificate in us-east-1 (DNS validation), the domain as a CloudFront
+  alias, and the DNS records (Route 53 alias, or CNAMEs he adds at his registrar).
+- Swap the CloudFront URL for the domain everywhere it's hardcoded: `SITE_URL` in
+  `.github/workflows/deploy.yml`, `README.md`, `AGENTS.md`. Keep the cloudfront.net URL
+  working (it still points at the same distribution).
+- Cookies are host-only, so sessions on the old URL don't carry over; her owner login is
+  needed once on the new domain. Update her home-screen bookmark.
+
 ## Later
 
 - **Desktop heads-up with a QR code.** On wide screens with a mouse pointer, show a small,
   dismissible note: "Made for your phone: scan to open it there, and to snap product photos",
   with a QR code of the current URL. Keep the copy short.
-- **Custom domain** (Route 53 + ACM on CloudFront) once Sergio buys one.
 - **Copy her local pantry to AWS?** Only if Sergio asks; she starts empty on AWS.
 - **Staging environment on AWS:** not now (one real user, point-in-time recovery covers
   mistakes). Revisit if a broken deploy would really hurt.
