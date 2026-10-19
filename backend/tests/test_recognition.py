@@ -77,7 +77,7 @@ def test_missing_key_is_a_503(client, monkeypatch):
     assert client.post("/api/recognize", json={"photoKey": photo(client)}).status_code == 503
 
 
-@pytest.mark.parametrize("key_var", ["OPENAI_API_KEY", "GEMINI_API_KEY"])
+@pytest.mark.parametrize("key_var", ["GROQ_API_KEY", "OPENAI_API_KEY", "GEMINI_API_KEY"])
 def test_provider_errors_are_502_and_never_leak_the_key(client, monkeypatch, key_var):
     monkeypatch.setenv(key_var, "secret-key-123")
 
@@ -165,3 +165,29 @@ def test_guests_are_capped_per_day(guest, model):
     for _ in range(20):
         assert guest.post("/api/recognize", json={"photoKey": key}).status_code == 200
     assert guest.post("/api/recognize", json={"photoKey": key}).status_code == 429
+
+
+def test_groq_request_shape_and_priority(client, monkeypatch):
+    monkeypatch.setenv("GROQ_API_KEY", "gsk-test")
+    monkeypatch.setenv("OPENAI_API_KEY", "ignored-when-groq-is-set")
+    post = fake_post({"choices": [{"message": {"content": json.dumps(ANSWER)}}]})
+    monkeypatch.setattr(recognize.httpx, "post", post)
+
+    result = client.post("/api/recognize", json={"photoKey": photo(client)}).json()
+
+    assert result["expiresOn"] == "2028-09-30"
+    assert post.sent["url"] == "https://api.groq.com/openai/v1/chat/completions"
+    assert post.sent["headers"] == {"Authorization": "Bearer gsk-test"}
+    body = post.sent["body"]
+    assert body["model"] == "qwen/qwen3.8-27b"
+    assert body["response_format"] == {"type": "json_object"}
+    text, image = body["messages"][0]["content"]
+    assert '"expiresOn"' in text["text"]
+    assert image["image_url"]["url"].startswith("data:image/jpeg;base64,")
+
+
+def test_groq_answer_with_wrong_shape_is_rejected(client, monkeypatch):
+    monkeypatch.setenv("GROQ_API_KEY", "gsk-test")
+    post = fake_post({"choices": [{"message": {"content": json.dumps({"product": "spaghetti"})}}]})
+    monkeypatch.setattr(recognize.httpx, "post", post)
+    assert client.post("/api/recognize", json={"photoKey": photo(client)}).status_code == 502

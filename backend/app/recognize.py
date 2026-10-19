@@ -1,6 +1,7 @@
 """Read a product photo into pantry-item fields with a multimodal model.
 
-Two providers, picked by which key is configured (OpenAI first):
+Providers, picked by the first key configured in this order:
+- Groq (GROQ_API_KEY, GROQ_MODEL), OpenAI-compatible chat completions in JSON mode
 - OpenAI (OPENAI_API_KEY, OPENAI_MODEL), Responses API with strict Structured Outputs
 - Gemini (GEMINI_API_KEY, GEMINI_MODEL), generateContent with a JSON schema
 `call_model` is the only provider-specific entry point.
@@ -15,6 +16,7 @@ from typing import Literal
 import httpx
 from pydantic import BaseModel, ValidationError
 
+DEFAULT_GROQ_MODEL = "qwen/qwen3.8-27b"
 DEFAULT_OPENAI_MODEL = "gpt-6-luna"
 DEFAULT_GEMINI_MODEL = "gemini-3.8-flash"
 TIMEOUT_SECONDS = 30
@@ -86,6 +88,35 @@ Return:
 - isProduct: false if this isn't a pantry product (a person, a room, a blank photo)."""
 
 
+def _groq(key: str, image: bytes, mime_type: str, prompt: str) -> str:
+    # Groq's JSON mode guarantees valid JSON but not the shape, so the schema goes in the
+    # prompt; recognize() validates the answer either way.
+    data_url = f"data:{mime_type};base64,{base64.b64encode(image).decode()}"
+    instructions = f"{prompt}\n\nReply with only a JSON object matching this schema:\n{json.dumps(SCHEMA)}"
+    body = {
+        "model": os.environ.get("GROQ_MODEL", DEFAULT_GROQ_MODEL),
+        "messages": [
+            {
+                "role": "user",
+                "content": [
+                    {"type": "text", "text": instructions},
+                    {"type": "image_url", "image_url": {"url": data_url}},
+                ],
+            }
+        ],
+        "response_format": {"type": "json_object"},
+        "temperature": 0,
+    }
+    response = httpx.post(
+        "https://api.groq.com/openai/v1/chat/completions",
+        headers={"Authorization": f"Bearer {key}"},
+        json=body,
+        timeout=TIMEOUT_SECONDS,
+    )
+    response.raise_for_status()
+    return response.json()["choices"][0]["message"]["content"]
+
+
 def _openai(key: str, image: bytes, mime_type: str, prompt: str) -> str:
     data_url = f"data:{mime_type};base64,{base64.b64encode(image).decode()}"
     body = {
@@ -145,7 +176,9 @@ def _gemini(key: str, image: bytes, mime_type: str, prompt: str) -> str:
 
 def call_model(image: bytes, mime_type: str, prompt: str) -> dict:
     """One structured call to whichever provider is configured; returns the parsed JSON."""
-    if key := os.environ.get("OPENAI_API_KEY"):
+    if key := os.environ.get("GROQ_API_KEY"):
+        provider = _groq
+    elif key := os.environ.get("OPENAI_API_KEY"):
         provider = _openai
     elif key := os.environ.get("GEMINI_API_KEY"):
         provider = _gemini

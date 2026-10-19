@@ -46,8 +46,9 @@ Taking a photo of a new item fills in its name, category, tracking mode and prin
 date. Add one provider's key to `backend/.env` (git-ignored), then `docker compose up -d api`:
 
 ```sh
-OPENAI_API_KEY='sk-...'        # used first; model defaults to gpt-6-luna (OPENAI_MODEL)
-GEMINI_API_KEY='...'           # used if there's no OpenAI key; gemini-3.8-flash (GEMINI_MODEL)
+GROQ_API_KEY='gsk_...'         # used first; qwen/qwen3.8-27b (GROQ_MODEL)
+OPENAI_API_KEY='sk-...'        # next; gpt-6-luna (OPENAI_MODEL)
+GEMINI_API_KEY='...'           # last; gemini-3.8-flash (GEMINI_MODEL)
 ```
 
 Daily caps per demo, for the owner, and overall keep costs bounded (`app/routers/recognition.py`).
