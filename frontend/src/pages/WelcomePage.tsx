@@ -41,9 +41,19 @@ export function WelcomePage() {
         </span>
         <h1 className="text-3xl font-bold">Pantry</h1>
       </div>
-      <p className="mt-3 text-stone-600">
-        A simple way to keep track of your pantry and never forget what to buy.
-      </p>
+      {/* A personal hello instead of a tagline: who made this and why. */}
+      <div className="mt-4 flex items-start gap-3 rounded-2xl bg-emerald-50 p-3">
+        <span
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-600 text-sm font-semibold text-white"
+          aria-hidden
+        >
+          SV
+        </span>
+        <p className="text-sm text-stone-700">
+          <b>Hi, I'm Sergio.</b> I built this app for my wife, so we always know what's in our pantry:
+          what we bring home from Costco, and what to use before it goes bad.
+        </p>
+      </div>
 
       <div className="mt-5">
         <TutorialStrip tutorials={TUTORIALS} />
