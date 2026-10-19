@@ -4,7 +4,7 @@ from typing import Literal
 from fastapi import APIRouter, Depends, File, HTTPException, Response, UploadFile, status
 from pydantic import BaseModel
 
-from app import ratelimit, storage
+from app import db, ratelimit, storage
 from app.sandbox import OWNER_SPACE, PREFIX
 from app.space import current_space
 
@@ -96,3 +96,17 @@ def read_photo(
         media_type=content_type,
         headers={"Cache-Control": "private, max-age=31536000, immutable"},
     )
+
+
+@router.delete("/{owner}/{photo_id}", status_code=status.HTTP_204_NO_CONTENT)
+def discard_photo(owner: str, photo_id: str, space: str = Depends(current_space)) -> None:
+    """Throw away an uploaded photo that was never used (e.g. a bad shot while stocking up).
+
+    Only photos uploaded in this space, and not attached to any item, can be deleted.
+    """
+    photo_key = f"{owner}/{photo_id}"
+    if not owns(space, photo_key):
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Photo not found")
+    if any(row.get("photoKey") == photo_key for row in db.query(space, "ITEM#")):
+        raise HTTPException(status.HTTP_409_CONFLICT, "That photo belongs to an item")
+    delete_photo(space, photo_key)

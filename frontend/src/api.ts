@@ -116,6 +116,8 @@ export const api = {
     form.append("thumb", thumb, "thumb.jpg");
     return request<{ photoKey: string }>("/photos", { method: "POST", body: form });
   },
+  /** Delete an uploaded photo that no item uses (e.g. a bad shot). */
+  discardPhoto: (photoKey: string) => request<void>(`/photos/${photoKey}`, { method: "DELETE" }),
   recognize: (photoKey: string) => request<Suggestion>("/recognize", json("POST", { photoKey })),
 
   getSession: () => request<SessionInfo>("/session"),

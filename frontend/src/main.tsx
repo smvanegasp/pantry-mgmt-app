@@ -4,6 +4,10 @@ import { createRoot } from "react-dom/client";
 
 import { App } from "./App";
 import "./index.css";
+import { applyTheme, followSystemTheme, storedTheme } from "./lib/theme";
+
+applyTheme(storedTheme());
+followSystemTheme();
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { staleTime: 30_000, retry: 1 } },

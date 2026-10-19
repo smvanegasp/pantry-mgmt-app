@@ -73,7 +73,8 @@ const CLIPS = [
       const eggs = page.getByRole("listitem").filter({ hasText: "Eggs" });
       await tap(page, eggs.getByRole("button", { name: "Decrease" }), 500);
       await tap(page, eggs.getByRole("button", { name: "Decrease" }), 900);
-      await tap(page, page.getByRole("button", { name: "Add item" }), 800);
+      await tap(page, page.getByRole("button", { name: "Add products" }), 900);
+      await tap(page, page.getByRole("button", { name: /Add one product/ }), 800);
       await type(page, page.getByLabel("Name"), "Honey");
       await page.getByRole("dialog").getByLabel("Category", { exact: true }).selectOption({ label: "Baking" });
       await pause(page, 600);

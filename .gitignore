@@ -31,3 +31,6 @@ Thumbs.db
 
 # Tutorial recorder debug output
 frontend/public/tutorials/*-failed.png
+
+# Other coding tools' local settings
+.codex/
