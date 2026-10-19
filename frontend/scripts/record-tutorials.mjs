@@ -5,8 +5,9 @@
 //
 // Each clip runs in its own throwaway demo sandbox seeded with the sample pantry, so the
 // owner's data is never touched. Needs ffmpeg on PATH. Writes public/tutorials/<id>.mp4 and
-// a poster image <id>.jpg. The "stock" clip reads two photos with the real model (a fraction
-// of a cent); the browser's fake camera shows scripts/tutorial-photos/barilla.jpg.
+// a poster image <id>.jpg. The "stock" clip reads three real product photos (Open Food Facts,
+// CC BY-SA; see scripts/tutorial-photos/CREDITS.md) with the real model, a fraction of a cent;
+// the browser's fake camera films olive-oil.jpg.
 
 import { execFileSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, renameSync, rmSync } from "node:fs";
@@ -97,14 +98,17 @@ const CLIPS = [
       await pause(page, 600);
       await tap(page, page.getByRole("button", { name: "Add products" }), 900);
       await tap(page, page.getByRole("button", { name: /^Stock up/ }), 1000);
-      // The fake camera shows the Barilla label; the almond milk comes from "library".
+      // The fake camera films the olive oil (it adds to "Olive oil"); the almond milk (asks
+      // "Same product?" about Milk) and the ketchup (new) come from the library.
       await page.getByRole("button", { name: "Take photo" }).waitFor();
       await pause(page, 900);
       await tap(page, page.getByRole("button", { name: "Take photo" }), 900);
-      await page.locator("input[type=file]").setInputFiles(join(PHOTOS, "almond-milk.jpg"));
+      await page
+        .locator("input[type=file]")
+        .setInputFiles([join(PHOTOS, "almond-milk.jpg"), join(PHOTOS, "ketchup.jpg")]);
       await pause(page, 1200);
-      await tap(page, page.getByRole("button", { name: /^Review 2 photos/ }), 900);
-      for (let card = 0; card < 2; card++) {
+      await tap(page, page.getByRole("button", { name: /^Review 3 photos/ }), 900);
+      for (let card = 0; card < 3; card++) {
         const accept = page.getByRole("button", { name: "Looks right" });
         // Wait until the photo is read (the button is disabled while it is).
         await page.waitForFunction(
@@ -215,8 +219,9 @@ mkdirSync(OUT, { recursive: true });
 const workDir = mkdtempSync(join(tmpdir(), "pantry-tutorials-"));
 // A webcam that films a product label, for the in-app camera in the "stock" clip.
 const camera = join(workDir, "camera.y4m");
-execFileSync("ffmpeg", ["-y", "-loglevel", "error", "-loop", "1", "-i", join(PHOTOS, "barilla.jpg"),
-  "-t", "2", "-vf", "scale=720:960,fps=15", "-pix_fmt", "yuv420p", camera]);
+execFileSync("ffmpeg", ["-y", "-loglevel", "error", "-loop", "1", "-i", join(PHOTOS, "olive-oil.jpg"),
+  "-t", "2", "-vf", "scale=720:960:force_original_aspect_ratio=increase,crop=720:960,fps=15",
+  "-pix_fmt", "yuv420p", camera]);
 const browser = await chromium.launch({
   args: ["--use-fake-ui-for-media-stream", "--use-fake-device-for-media-stream", `--use-file-for-fake-video-capture=${camera}`],
 });
