@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 
 import { SESSION_EXPIRED } from "./api";
 import { DemoBanner } from "./components/DemoBanner";
+import { DesktopQr } from "./components/DesktopQr";
 import { useList, useRefreshSession, useSession } from "./hooks";
 import { ListPage } from "./pages/ListPage";
 import { PantryPage } from "./pages/PantryPage";
@@ -24,6 +25,15 @@ const PAGES: Record<Tab, () => React.JSX.Element> = {
 };
 
 export function App() {
+  return (
+    <>
+      <Screen />
+      <DesktopQr />
+    </>
+  );
+}
+
+function Screen() {
   const session = useSession();
   const refresh = useRefreshSession();
 
