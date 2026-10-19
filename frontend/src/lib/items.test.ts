@@ -160,16 +160,17 @@ describe("sections for time and stock sorts", () => {
       item({ name: "Gone", level: 0 }),
       item({ name: "Quarter", level: 25 }),
       item({ name: "Half", level: 50 }),
+      item({ name: "Three quarters", level: 75 }),
       item({ name: "Full", level: 100 }),
       item({ name: "One can", mode: "count", count: 1 }),
+      item({ name: "Two cans", mode: "count", count: 2 }),
       item({ name: "Three cans", mode: "count", count: 3 }),
-      item({ name: "Six cans", mode: "count", count: 6 }),
+      item({ name: "Four cans", mode: "count", count: 4 }),
     ];
     expect(sections("stock", list)).toEqual([
-      ["Empty", ["Gone"]],
-      ["Running low", ["One can", "Quarter"]],
-      ["About half or 2–3 left", ["Half", "Three cans"]],
-      ["Plenty", ["Full", "Six cans"]],
+      ["Low", ["Gone", "One can", "Quarter"]],
+      ["Normal", ["Half", "Two cans", "Three cans", "Three quarters"]],
+      ["Plenty", ["Four cans", "Full"]],
     ]);
   });
 

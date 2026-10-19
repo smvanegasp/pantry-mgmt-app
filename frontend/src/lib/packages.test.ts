@@ -55,6 +55,9 @@ describe("totals and labels", () => {
     const rice = item("level", [pkg("a", { level: 50 }), pkg("b")]);
     expect(stockNote(rice)).toBe("1½ left");
     expect(packageSummary(rice)).toBe("2 packages · 1½ total");
+    expect(
+      packageSummary(item("count", [pkg("a", { count: 6 }), pkg("b", { count: 6 })])),
+    ).toBe("2 dates · 12 total");
     expect(packageSummary(item("level", [pkg("a")]))).toBeNull();
     expect(stockNote(item("level", [pkg("a", { level: 0 })]))).toBe("Empty");
     expect(stockNote(item("count", [pkg("a", { count: 3 })]))).toBe("3 left");

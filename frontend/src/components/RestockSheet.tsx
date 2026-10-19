@@ -101,12 +101,13 @@ export function RestockSheet({ entries, itemsById, categories, onClose }: Props)
         {pending.length > 0 && (
           <div className="flex items-start gap-1.5 text-sm text-stone-600">
             <p>
-              Each item you bought becomes a new package in your pantry. Add an expiration date if
-              you like, or skip it.
+              Everything you bought is added to your pantry. Add an expiration date if you like, or
+              skip it.
             </p>
             <InfoTip title="Putting groceries away">
               For <b>how full</b> items, the quantity is how many new full packages you bought.
-              For <b>how many</b> items, it's how many you bought (they're added as one batch).
+              For <b>how many</b> items, it's how many you bought; they're added with their own
+              expiration date.
               Anything you didn't find goes back on the list.
             </InfoTip>
           </div>

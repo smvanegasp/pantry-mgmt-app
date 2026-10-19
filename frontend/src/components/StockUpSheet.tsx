@@ -48,7 +48,7 @@ function CardContent({ shot, existing, categories }: { shot: Shot; existing?: It
                 .join(" · ")}
             </p>
             {existing && (
-              <p className="text-sm font-medium text-sky-700">Adds a package to “{existing.name}”</p>
+              <p className="text-sm font-medium text-sky-700">Adds to “{existing.name}” in your pantry</p>
             )}
           </>
         ) : (

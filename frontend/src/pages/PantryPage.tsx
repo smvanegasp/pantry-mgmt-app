@@ -252,6 +252,7 @@ export function PantryPage() {
           <ItemForm
             key={sheet.kind === "edit" ? sheet.item.id : "new"}
             initial={sheet.kind === "edit" ? toInput(sheet.item) : undefined}
+            lockMode={sheet.kind === "edit"}
             categories={categories.data ?? []}
             submitLabel={sheet.kind === "edit" ? "Save" : "Add to pantry"}
             submitting={createItem.isPending || updateItem.isPending}
