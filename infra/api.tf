@@ -80,8 +80,8 @@ resource "aws_iam_role_policy" "api" {
       },
       {
         # SecureStrings use the AWS-managed aws/ssm key, whose policy already allows SSM use.
-        Effect   = "Allow"
-        Action   = "ssm:GetParametersByPath"
+        Effect = "Allow"
+        Action = "ssm:GetParametersByPath"
         # The path itself, trailing slash included, is what GetParametersByPath is checked against.
         Resource = "arn:aws:ssm:us-east-1:${local.account_id}:parameter${local.ssm_prefix}"
       },
