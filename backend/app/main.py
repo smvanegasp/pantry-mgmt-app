@@ -24,8 +24,9 @@ async def lifespan(_: FastAPI):
 
 app = FastAPI(
     title="Pantry API",
-    docs_url="/api/docs",
-    openapi_url="/api/openapi.json",
+    # Interactive API docs locally only; on AWS they would just map the API for strangers.
+    docs_url=None if on_aws() else "/api/docs",
+    openapi_url=None if on_aws() else "/api/openapi.json",
     lifespan=lifespan,
 )
 

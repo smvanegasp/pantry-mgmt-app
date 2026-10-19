@@ -1,6 +1,8 @@
 """Behavior that only switches on when running on AWS (Lambda behind CloudFront)."""
 
 import os
+import subprocess
+import sys
 
 import boto3
 import pytest
@@ -40,6 +42,14 @@ def test_missing_session_secret_is_fatal_on_aws(aws_env) -> None:
     os.environ["AWS_LAMBDA_FUNCTION_NAME"] = "pantry-api"
     with pytest.raises(RuntimeError):
         session_secret()
+
+
+def test_no_api_docs_on_aws() -> None:
+    # The app is configured at import, so check it in a fresh interpreter set up like Lambda.
+    env = {**os.environ, "AWS_LAMBDA_FUNCTION_NAME": "pantry-api"}
+    code = "from app.main import app; print(app.docs_url, app.openapi_url)"
+    result = subprocess.run([sys.executable, "-c", code], env=env, capture_output=True, text=True, check=True)
+    assert result.stdout.split() == ["None", "None"]
 
 
 def test_only_cloudfront_may_call_the_api(aws_env) -> None:
