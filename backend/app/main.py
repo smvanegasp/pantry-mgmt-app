@@ -3,14 +3,15 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
-from app import db
-from app.routers import categories, grocery_list, items, session, settings
+from app import db, storage
+from app.routers import categories, grocery_list, items, photos, session, settings
 
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     if os.environ.get("AUTO_CREATE_TABLE") == "1":
         db.create_table_if_missing()
+        storage.create_bucket_if_missing()
     yield
 
 
@@ -25,6 +26,7 @@ app.include_router(categories.router)
 app.include_router(items.router)
 app.include_router(settings.router)
 app.include_router(grocery_list.router)
+app.include_router(photos.router)
 
 
 @app.get("/api/health")

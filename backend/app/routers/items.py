@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from app import db
 from app.models import Item, ItemIn, ItemPatch
 from app.routers.categories import get_category
+from app.routers.photos import delete_photo
 from app.space import current_space
 from app.stock import normalize_packages
 
@@ -81,6 +82,8 @@ def update_item(item_id: str, body: ItemPatch, space: str = Depends(current_spac
         Item.model_validate({**item.model_dump(), **changes, "updatedAt": _now()})
     )
     _save(space, updated)
+    if updated.photoKey != item.photoKey:
+        delete_photo(space, item.photoKey)
     if updated.name != item.name:
         _update_list_entries(space, item_id, name=updated.name)
     return updated
@@ -88,8 +91,9 @@ def update_item(item_id: str, body: ItemPatch, space: str = Depends(current_spac
 
 @router.delete("/{item_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_item(item_id: str, space: str = Depends(current_space)) -> None:
-    get_item(space, item_id)
+    item = get_item(space, item_id)
     db.delete(space, _sk(item_id))
+    delete_photo(space, item.photoKey)
     # Keep it on the grocery list as a plain entry; the user may still want to buy it.
     _update_list_entries(space, item_id, itemId=None)
 

@@ -29,6 +29,7 @@ function item(mode: Item["mode"], packages: Package[]): Item {
     buyWhenLevel: null,
     buyWhenCount: null,
     packages,
+    photoKey: null,
     createdAt: "",
     updatedAt: "",
   };

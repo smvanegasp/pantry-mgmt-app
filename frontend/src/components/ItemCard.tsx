@@ -13,6 +13,7 @@ import {
 } from "../lib/packages";
 import { CountStepper } from "./CountStepper";
 import { LevelPicker } from "./LevelPicker";
+import { ItemThumb } from "./Photo";
 
 const EXPIRY_STYLES = {
   expired: "bg-red-100 text-red-700",
@@ -36,35 +37,40 @@ export function ItemCard({ item, settings, onList, onEdit }: Props) {
 
   return (
     <li className="rounded-xl border border-stone-200 bg-white p-3 shadow-sm">
-      <button type="button" onClick={onEdit} className="flex w-full items-start gap-2 text-left">
-        <span className="flex-1 text-base font-semibold text-stone-900">{item.name}</span>
-        {onList && (
-          <span className="inline-flex items-center gap-1 rounded-full bg-sky-100 px-2 py-0.5 text-xs font-medium text-sky-800">
-            <ShoppingCart size={12} weight="fill" aria-hidden /> On list
-          </span>
-        )}
-        {low && !onList && (
-          <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800">
-            <WarningCircle size={12} weight="fill" aria-hidden /> Low
-          </span>
-        )}
-        <CaretRight size={16} weight="bold" className="mt-1 text-stone-400" aria-hidden />
-      </button>
-      {(expiry || summary) && (
-        <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
-          {expiry && (
-            <span
-              className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${EXPIRY_STYLES[expiryStatus(expiry)]}`}
-            >
-              <Clock size={12} weight="fill" aria-hidden />
-              {summary
-                ? formatExpiry(expiry).replace(/^Expires/, "Next expires").replace(/^Expired/, "One expired")
-                : formatExpiry(expiry)}
-            </span>
+      <div className="flex items-start gap-3">
+        {item.photoKey && <ItemThumb photoKey={item.photoKey} alt={item.name} />}
+        <div className="min-w-0 flex-1">
+          <button type="button" onClick={onEdit} className="flex w-full items-start gap-2 text-left">
+            <span className="flex-1 text-base font-semibold text-stone-900">{item.name}</span>
+            {onList && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-sky-100 px-2 py-0.5 text-xs font-medium text-sky-800">
+                <ShoppingCart size={12} weight="fill" aria-hidden /> On list
+              </span>
+            )}
+            {low && !onList && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800">
+                <WarningCircle size={12} weight="fill" aria-hidden /> Low
+              </span>
+            )}
+            <CaretRight size={16} weight="bold" className="mt-1 text-stone-400" aria-hidden />
+          </button>
+          {(expiry || summary) && (
+            <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
+              {expiry && (
+                <span
+                  className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${EXPIRY_STYLES[expiryStatus(expiry)]}`}
+                >
+                  <Clock size={12} weight="fill" aria-hidden />
+                  {summary
+                    ? formatExpiry(expiry).replace(/^Expires/, "Next expires").replace(/^Expired/, "One expired")
+                    : formatExpiry(expiry)}
+                </span>
+              )}
+              {summary && <span className="text-xs text-stone-500">{summary}</span>}
+            </div>
           )}
-          {summary && <span className="text-xs text-stone-500">{summary}</span>}
         </div>
-      )}
+      </div>
       <div className="mt-2">
         {summary && (
           <p className="mb-1 text-xs text-stone-500">

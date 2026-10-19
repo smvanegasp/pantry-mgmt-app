@@ -20,8 +20,10 @@ services:
       DYNAMODB_ENDPOINT: http://dynamodb:8000
       TABLE_NAME: pantry
       AUTO_CREATE_TABLE: "1"
+      S3_ENDPOINT: http://s3:9090
+      PHOTOS_BUCKET: pantry-photos
       AWS_REGION: us-east-1
-      # DynamoDB Local accepts any credentials.
+      # DynamoDB Local and S3Mock accept any credentials.
       AWS_ACCESS_KEY_ID: local
       AWS_SECRET_ACCESS_KEY: local
       # Docker on Windows doesn't forward file-change events; poll for --reload.
@@ -29,6 +31,19 @@ services:
     command: uvicorn app.main:app --host 0.0.0.0 --port 8080 --reload
     depends_on:
       - dynamodb
+      - s3
+
+  # S3-compatible photo storage for local dev (S3 itself on AWS).
+  s3:
+    image: adobe/s3mock:latest
+    # Root so it can write to the named volume.
+    user: root
+    environment:
+      COM_ADOBE_TESTING_S3MOCK_STORE_INITIAL_BUCKETS: pantry-photos
+      COM_ADOBE_TESTING_S3MOCK_STORE_RETAIN_FILES_ON_EXIT: "true"
+      COM_ADOBE_TESTING_S3MOCK_STORE_ROOT: /data
+    volumes:
+      - s3_data:/data
 
   dynamodb:
     image: amazon/dynamodb-local:latest
@@ -57,4 +72,5 @@ services:
 
 volumes:
   dynamodb_data:
+  s3_data:
   web_node_modules:
