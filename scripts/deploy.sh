@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 # Deploy to AWS: API image -> ECR, Terraform apply, frontend -> S3, CloudFront invalidation.
+# Merges into main deploy code automatically (.github/workflows/deploy.yml); run this by hand
+# for infrastructure changes or a manual deploy.
 # Run from Git Bash in the repo root:  scripts/deploy.sh
 # Extra arguments go to `terraform apply` (e.g. -auto-approve).
 set -euo pipefail
@@ -40,15 +42,6 @@ echo "== Building the frontend"
 (cd frontend && npm ci --no-audit --no-fund && npm run build)
 
 echo "== Uploading the frontend"
-# Hashed bundles never change; older ones stay so open tabs can still load their chunks.
-aws s3 sync frontend/dist/assets "s3://$bucket/assets" \
-  --cache-control "public,max-age=31536000,immutable" --only-show-errors
-aws s3 sync frontend/dist "s3://$bucket" --delete --exclude "assets/*" --exclude index.html \
-  --cache-control "public,max-age=3600" --only-show-errors
-aws s3 cp frontend/dist/index.html "s3://$bucket/index.html" \
-  --cache-control "no-cache" --only-show-errors
-
-aws cloudfront create-invalidation --distribution-id "$distribution" --paths "/*" \
-  --query Invalidation.Id --output text >/dev/null
+scripts/upload_frontend.sh "$bucket" "$distribution"
 
 echo "== Done: $(tf output -raw url)"
