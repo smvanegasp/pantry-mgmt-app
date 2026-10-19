@@ -215,7 +215,6 @@ export function ItemForm({
         </label>
         <input
           id="item-name"
-          autoFocus={!initial}
           required
           maxLength={80}
           value={item.name}
@@ -252,7 +251,9 @@ export function ItemForm({
           <div className="flex gap-2">
             <input
               id="item-category"
-              autoFocus
+              // Focus only when the user picked "+ New category…" (blank), not when a photo
+              // suggested one: that would pop the keyboard up right after the camera closes.
+              autoFocus={newCategory === ""}
               maxLength={80}
               value={newCategory}
               onChange={(e) => setNewCategory(e.target.value)}
