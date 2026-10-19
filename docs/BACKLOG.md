@@ -5,9 +5,9 @@ Move an item to "Done" (with its PR) when it ships, and add new requests here as
 Each stage ends at the usual gate: tests, a Playwright check at 390×844 in a sample demo
 (light and dark), Sergio's phone test through ngrok, then a PR. Merging deploys.
 
-## In review: stage 7c, first impressions
+## In review: stage 7c, first impressions (PR #17)
 
-Branch `stage-7c-first-impressions`, waiting on Sergio's phone test.
+Branch `stage-7c-first-impressions`, passed Sergio's test.
 - **Desktop QR popup** (`DesktopQr.tsx`, `QrCode.tsx`): on a computer (min-width 900px, hover,
   fine pointer) a popup shows a QR code of the current URL; after closing, an "Open on your
   phone" button in the top right reopens it, and it doesn't pop up again on reload.
