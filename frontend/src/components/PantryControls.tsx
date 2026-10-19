@@ -55,7 +55,7 @@ export function PantryControls({ query, onChange, categories, total, counts }: P
           );
         })}
         <span className="ml-auto">
-          <InfoTip title="Filters" align="right">
+          <InfoTip title="Filters">
             <b>Low</b>: items at or below their "add to list" point. <b>Expiring</b>: items with a
             package that has expired or expires within {SOON_DAYS} days.
           </InfoTip>

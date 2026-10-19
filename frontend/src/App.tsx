@@ -1,10 +1,13 @@
 import { Basket, GearSix, ShoppingCart, type Icon } from "@phosphor-icons/react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
-import { useList } from "./hooks";
+import { SESSION_EXPIRED } from "./api";
+import { DemoBanner } from "./components/DemoBanner";
+import { useList, useRefreshSession, useSession } from "./hooks";
 import { ListPage } from "./pages/ListPage";
 import { PantryPage } from "./pages/PantryPage";
 import { SettingsPage } from "./pages/SettingsPage";
+import { WelcomePage } from "./pages/WelcomePage";
 
 const TABS: readonly { id: "pantry" | "list" | "settings"; label: string; title: string; icon: Icon }[] = [
   { id: "pantry", label: "Pantry", title: "Pantry", icon: Basket },
@@ -21,6 +24,25 @@ const PAGES: Record<Tab, () => React.JSX.Element> = {
 };
 
 export function App() {
+  const session = useSession();
+  const refresh = useRefreshSession();
+
+  // A 401 from any request means the session ended (e.g. the demo expired): re-check it.
+  useEffect(() => {
+    window.addEventListener(SESSION_EXPIRED, refresh);
+    return () => window.removeEventListener(SESSION_EXPIRED, refresh);
+  }, [refresh]);
+
+  if (session.isLoading) return null;
+  if (session.error) {
+    return <p className="p-6 text-center text-red-600">Couldn't reach the app: {session.error.message}</p>;
+  }
+  if (!session.data?.role) return <WelcomePage />;
+  return <MainApp />;
+}
+
+function MainApp() {
+  const session = useSession().data!;
   const [tab, setTab] = useState<Tab>("pantry");
   const list = useList();
   const toBuy = (list.data ?? []).filter((e) => !e.checked).length;
@@ -32,6 +54,9 @@ export function App() {
       <main className="px-4 pt-[max(1rem,env(safe-area-inset-top))]">
         {/* The tab bar shows where you are; the heading is for screen readers. */}
         <h1 className="sr-only">{current.title}</h1>
+        {session.role === "guest" && session.expiresAt && (
+          <DemoBanner expiresAt={session.expiresAt} ownerLoginEnabled={session.ownerLoginEnabled} />
+        )}
         <Page />
       </main>
 

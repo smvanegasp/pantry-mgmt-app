@@ -1,5 +1,6 @@
 import { X } from "@phosphor-icons/react";
 import { useEffect, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 
 interface Props {
   title: string;
@@ -18,7 +19,8 @@ export function BottomSheet({ title, onClose, children }: Props) {
     };
   }, [onClose]);
 
-  return (
+  // Rendered at the end of <body> so sheets never inherit styles from where they're opened.
+  return createPortal(
     <div className="fixed inset-0 z-40 flex items-end justify-center sm:items-center">
       <div className="absolute inset-0 bg-black/40" onClick={onClose} aria-hidden />
       <div
@@ -42,6 +44,7 @@ export function BottomSheet({ title, onClose, children }: Props) {
           {children}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

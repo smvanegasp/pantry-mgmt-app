@@ -26,6 +26,20 @@ Test on your phone:
 ngrok http 5173
 ```
 
+## Owner passcode (local)
+
+Visitors get a private demo sandbox (a copy of the owner's pantry that expires after 24h).
+To enable the owner login ("I'm Sergio's wife"), set the 4-digit passcode once:
+
+```sh
+cd backend
+uv run python ../scripts/set_passcode.py
+docker compose up -d api
+```
+
+This writes `PASSCODE_HASH` and `SESSION_SECRET` to `backend/.env` (git-ignored); the passcode
+itself is never stored.
+
 ## Backend tests
 
 ```sh

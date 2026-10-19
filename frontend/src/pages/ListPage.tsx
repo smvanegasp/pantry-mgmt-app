@@ -116,7 +116,7 @@ export function ListPage() {
               : (message ??
                 `Adds everything at ${levelLabel(settings.buyWhenLevel)} or less, or ${settings.buyWhenCount} or fewer left.`)}
           </p>
-          <InfoTip title="Generate list" align="right">
+          <InfoTip title="Generate list">
             Looks at every pantry item and adds the ones whose total has dropped to their "add to
             list" point. Items already on the list aren't added twice. Change the defaults in
             Settings, or per item in its edit screen.

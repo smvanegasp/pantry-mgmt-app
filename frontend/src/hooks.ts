@@ -6,6 +6,7 @@ import {
   type ItemInput,
   type ListEntry,
   type RestockInput,
+  type SessionInfo,
   type Settings,
 } from "./api";
 import { DEFAULT_SETTINGS } from "./lib/items";
@@ -14,6 +15,32 @@ const ITEMS = ["items"];
 const CATEGORIES = ["categories"];
 const SETTINGS = ["settings"];
 const LIST = ["list"];
+const SESSION = ["session"];
+
+export const useSession = () =>
+  useQuery({ queryKey: SESSION, queryFn: api.getSession, staleTime: Infinity });
+
+/** Switching sessions switches data spaces, so drop everything cached from the old one. */
+function useSessionChange<A>(fn: (arg: A) => Promise<SessionInfo>) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: fn,
+    onSuccess: (session) => {
+      qc.removeQueries({ predicate: (q) => q.queryKey[0] !== SESSION[0] });
+      qc.setQueryData(SESSION, session);
+    },
+  });
+}
+
+export const useStartGuest = () => useSessionChange<void>(api.startGuest);
+export const useResetGuest = () => useSessionChange<void>(api.resetGuest);
+export const useOwnerLogin = () => useSessionChange<string>(api.ownerLogin);
+export const useLogout = () => useSessionChange<void>(api.logout);
+
+export function useRefreshSession() {
+  const qc = useQueryClient();
+  return () => qc.invalidateQueries({ queryKey: SESSION });
+}
 
 export const useItems = () => useQuery({ queryKey: ITEMS, queryFn: api.listItems });
 export const useCategories = () => useQuery({ queryKey: CATEGORIES, queryFn: api.listCategories });
