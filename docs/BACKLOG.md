@@ -5,44 +5,20 @@ Move an item to "Done" (with its PR) when it ships, and add new requests here as
 Each stage ends at the usual gate: tests, a Playwright check at 390×844 in a sample demo
 (light and dark), Sergio's phone test through ngrok, then a PR. Merging deploys.
 
-## In review: stage 7b, no duplicate items
+## In review: stage 7c, first impressions (PR #17)
 
-Branch `stage-7b-no-duplicates`, passed Sergio's phone test ("works really well").
-- Photo reading gets the pantry's item names and returns an existing name for the same
-  product (`existingItemId` in the response).
-- `similarNames` / `findMatch` (`frontend/src/lib/search.ts`, `stockup.ts`): whole words, typos
-  and plurals, no prefixes ("Kirkland black beans" ~ "Black beans"; not "Blackberries").
-- Add one product and the stock-up fix form: "Looks like one you have" note, **Add to …**
-  (switches to that item's how full / how many) or "add as a new item".
-- Stock-up review: sure matches merge ("Adds to …"); similar names ask "Same product?",
-  defaulting to Keep separate.
-
-## Next: stage 7c, first impressions: desktop QR code, welcome story, app icon, new clips
-
-- **Desktop QR popup** (Sergio: important, since the app is mobile first). On a desktop, open
-  a popup on load: "Pantry is made for your phone. Scan to try it there, camera included",
-  with a QR code of the current URL.
-  - Desktop only: wide screen *and* a mouse pointer, e.g.
-    `(min-width: 900px) and (hover: hover) and (pointer: fine)`, so tablets and phones never
-    see it.
-  - After closing it, a small floating **QR** button (Phosphor `QrCode`, fill) reopens it.
-    Remember that it was closed (localStorage), so it doesn't reopen on every page load.
-  - Show it on the welcome page and inside the app (a desktop visitor may already be in a demo).
-  - Generate the QR code in the browser (a small npm package such as `qrcode`), no external
-    service, so the URL never leaves the page. It points at whatever URL is open, so it
-    keeps working after the custom domain (7e).
-- **A personal note on the welcome page**, above the clips: a small card with an "SV" initials
-  avatar. Draft copy for Sergio to edit: "Hi, I'm Sergio. I built this app for my wife, so we
-  always know what's in our pantry: what we bring home from Costco, and what to use before it
-  goes bad. Take it for a spin with a sample pantry below." Warm and short.
-- **App icon, favicon and "Add to Home Screen" (PWA).** There's no favicon (404 locally, 403 on
-  AWS). Add a basket icon (SVG + PNG sizes), apple-touch-icon and a manifest in
-  `frontend/index.html` / `frontend/public` so it installs like an app.
-- **Re-record the tutorial clips, last,** so they show 7a's search and sections, 7b's
-  duplicate check and the new welcome note. Update the steps in
-  `frontend/scripts/record-tutorials.mjs`, add a fifth clip for **"Stock your pantry"** (snap,
-  swipe, done; the file input "Choose photos from library" can feed it photos), and update the
-  captions in `WelcomePage.tsx`. Record at phone size so the desktop QR popup never appears.
+Branch `stage-7c-first-impressions`, passed Sergio's test.
+- **Desktop QR popup** (`DesktopQr.tsx`, `QrCode.tsx`): on a computer (min-width 900px, hover,
+  fine pointer) a popup shows a QR code of the current URL; after closing, an "Open on your
+  phone" button in the top right reopens it, and it doesn't pop up again on reload.
+  Drawn in the browser with `qrcode-generator` (pinned), fixed black on white for dark mode.
+- **Personal note** replaces the welcome tagline ("Hi, I'm Sergio. I built this app for my
+  wife..."); the tutorial clip gives up a little height so common phones still don't scroll.
+- **App icon:** white Phosphor basket on emerald; `favicon.svg`, `apple-touch-icon.png`,
+  `icon-192/512.png`, `manifest.json` (standalone). The favicon error is gone.
+- **Five tutorial clips**, re-recorded: search in "track"; new "stock" clip (fake webcam
+  showing `scripts/tutorial-photos/barilla.jpg`, almond milk from the library, "Adds to
+  Spaghetti" and "Same product?").
 
 ## Then: stage 7d, hardening and making the repo public
 
@@ -66,8 +42,8 @@ before Sergio flips the repo to public in GitHub's settings:
 - **Error alerts:** CloudWatch alarm on Lambda errors and API 5xx, emailing Sergio through SNS
   (Terraform; Sergio applies and confirms the subscription email). Free or pennies.
 - **Dependabot** for pip, npm and GitHub Actions, one grouped PR a week.
-- **Decision:** 34 commits carry Sergio's personal Gmail as author. Keep it (simplest) or
-  rewrite history to the GitHub noreply address (force-push to `main`, only on his explicit OK).
+- **Decided (2026-10-19):** Sergio is fine with his Gmail showing in commit history once the
+  repo is public. No history rewrite, no change to his git config.
 - **Fine to publish as is:** AWS account ID, CloudFront ID and URL (identifiers, not secrets;
   the deploy role only trusts `main` of this repo; CI never gets secrets on pull requests).
 - Last step: re-run the secrets scan, then Sergio makes the repo public.
@@ -100,8 +76,9 @@ Route 53).
   photo viewer, error states.
 - **Escape closes too much:** with the photo viewer open inside an item sheet, Escape closes
   both. Make it close only the top layer.
-- **Smallest phones:** on 375×667 (iPhone SE) the welcome page scrolls about 19px; the tutorial
-  clip has a minimum size. Fine for now.
+- **Smallest phones:** on 375×667 (iPhone SE) the welcome page scrolls about 100px since the
+  personal note was added (the tutorial clip is already at its minimum size). Common phones
+  (390×844 and up) fit; 360×780 scrolls 6px. Fine for now.
 - Test warning: Starlette suggests `httpx2` for its TestClient. Harmless; update when convenient.
 
 ## For Sergio (outside the code)
@@ -111,5 +88,5 @@ Route 53).
 
 ## Done
 
-- Stage 0–7a: see the status table in AGENTS.md §3 (PRs #1–#15).
+- Stage 0–7b: see the status table in AGENTS.md §3 (PRs #1–#16).
 - `.codex/config.toml` in history: checked, it only lists MCP servers; nothing to rotate.

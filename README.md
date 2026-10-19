@@ -130,7 +130,9 @@ Tests never call a real model.
 ### Tutorial clips
 
 The welcome screen shows short clips recorded from the real app in a throwaway demo with the
-sample pantry. Re-record them after UI changes:
+sample pantry. The "Stock your pantry" clip uses a fake webcam that films a product label
+(`frontend/scripts/tutorial-photos/`) and reads two photos with the real model, a fraction of
+a cent. Re-record them after UI changes:
 
 ```sh
 cd frontend

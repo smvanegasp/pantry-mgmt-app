@@ -5,7 +5,8 @@
 //
 // Each clip runs in its own throwaway demo sandbox seeded with the sample pantry, so the
 // owner's data is never touched. Needs ffmpeg on PATH. Writes public/tutorials/<id>.mp4 and
-// a poster image <id>.jpg.
+// a poster image <id>.jpg. The "stock" clip reads two photos with the real model (a fraction
+// of a cent); the browser's fake camera shows scripts/tutorial-photos/barilla.jpg.
 
 import { execFileSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, renameSync, rmSync } from "node:fs";
@@ -14,7 +15,9 @@ import { join } from "node:path";
 import { chromium } from "playwright";
 
 const BASE = process.argv[2] ?? "http://localhost:5173";
-const OUT = new URL("../public/tutorials/", import.meta.url).pathname.replace(/^\/(\w:)/, "$1");
+const localPath = (relative) => new URL(relative, import.meta.url).pathname.replace(/^\/(\w:)/, "$1");
+const OUT = localPath("../public/tutorials/");
+const PHOTOS = localPath("./tutorial-photos/");
 const VIEWPORT = { width: 390, height: 844 };
 // Pauses are written for a comfortable pace, then shortened by PACE; the encode then plays
 // back at SPEED. Together they keep clips brisk without skipping any steps.
@@ -73,6 +76,10 @@ const CLIPS = [
       const eggs = page.getByRole("listitem").filter({ hasText: "Eggs" });
       await tap(page, eggs.getByRole("button", { name: "Decrease" }), 500);
       await tap(page, eggs.getByRole("button", { name: "Decrease" }), 900);
+      await tap(page, page.getByRole("button", { name: "Search", exact: true }), 500);
+      await type(page, page.getByLabel("Search items"), "oats");
+      await pause(page, 900);
+      await tap(page, page.getByRole("button", { name: "Close search" }), 800);
       await tap(page, page.getByRole("button", { name: "Add products" }), 900);
       await tap(page, page.getByRole("button", { name: /Add one product/ }), 800);
       await type(page, page.getByLabel("Name"), "Honey");
@@ -80,6 +87,35 @@ const CLIPS = [
       await pause(page, 600);
       await tap(page, page.getByRole("dialog").getByRole("button", { name: "+1y" }), 900);
       await tap(page, page.getByRole("button", { name: "Add to pantry" }), 1500);
+    },
+  },
+  {
+    id: "stock",
+    async run(page) {
+      await page.goto(BASE);
+      await page.getByRole("button", { name: "Add products" }).waitFor();
+      await pause(page, 600);
+      await tap(page, page.getByRole("button", { name: "Add products" }), 900);
+      await tap(page, page.getByRole("button", { name: /^Stock up/ }), 1000);
+      // The fake camera shows the Barilla label; the almond milk comes from "library".
+      await page.getByRole("button", { name: "Take photo" }).waitFor();
+      await pause(page, 900);
+      await tap(page, page.getByRole("button", { name: "Take photo" }), 900);
+      await page.locator("input[type=file]").setInputFiles(join(PHOTOS, "almond-milk.jpg"));
+      await pause(page, 1200);
+      await tap(page, page.getByRole("button", { name: /^Review 2 photos/ }), 900);
+      for (let card = 0; card < 2; card++) {
+        const accept = page.getByRole("button", { name: "Looks right" });
+        // Wait until the photo is read (the button is disabled while it is).
+        await page.waitForFunction(
+          () => !document.querySelector('[aria-label="Looks right"]')?.hasAttribute("disabled"),
+          null,
+          { timeout: 30000 },
+        );
+        await pause(page, 1800);
+        await tap(page, accept, 1000);
+      }
+      await tap(page, page.getByRole("button", { name: "Done" }), 1600);
     },
   },
   {
@@ -137,6 +173,7 @@ const CLIPS = [
 async function record(browser, clip, workDir) {
   const context = await browser.newContext({
     viewport: VIEWPORT,
+    permissions: ["camera"],
     // Playwright records the viewport 1:1 (a larger size just adds gray padding).
     recordVideo: { dir: workDir, size: VIEWPORT },
   });
@@ -152,6 +189,8 @@ async function record(browser, clip, workDir) {
   } catch (err) {
     const shot = join(OUT, `${clip.id}-failed.png`);
     await page.screenshot({ path: shot });
+    // Release the video file, or cleaning up the work folder fails and hides this error.
+    await context.close();
     throw new Error(`Clip "${clip.id}" failed (screenshot: ${shot}): ${err.message}`);
   }
   const video = page.video();
@@ -174,7 +213,13 @@ function encode(id, raw, trimStart) {
 
 mkdirSync(OUT, { recursive: true });
 const workDir = mkdtempSync(join(tmpdir(), "pantry-tutorials-"));
-const browser = await chromium.launch();
+// A webcam that films a product label, for the in-app camera in the "stock" clip.
+const camera = join(workDir, "camera.y4m");
+execFileSync("ffmpeg", ["-y", "-loglevel", "error", "-loop", "1", "-i", join(PHOTOS, "barilla.jpg"),
+  "-t", "2", "-vf", "scale=720:960,fps=15", "-pix_fmt", "yuv420p", camera]);
+const browser = await chromium.launch({
+  args: ["--use-fake-ui-for-media-stream", "--use-fake-device-for-media-stream", `--use-file-for-fake-video-capture=${camera}`],
+});
 try {
   for (const clip of CLIPS) {
     process.stdout.write(`Recording ${clip.id}… `);

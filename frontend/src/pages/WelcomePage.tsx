@@ -9,7 +9,12 @@ const TUTORIALS: Tutorial[] = [
   {
     id: "track",
     title: "Know what's in your pantry",
-    text: "Tap how full something is, or how many are left. Add items with an expiration date.",
+    text: "Tap how full something is, or how many are left. Search, and add items with an expiration date.",
+  },
+  {
+    id: "stock",
+    title: "Stock your pantry in a snap",
+    text: "Snap your groceries one after another, then swipe. Things you already have are added to, not doubled.",
   },
   {
     id: "list",
@@ -41,9 +46,20 @@ export function WelcomePage() {
         </span>
         <h1 className="text-3xl font-bold">Pantry</h1>
       </div>
-      <p className="mt-3 text-stone-600">
-        A simple way to keep track of your pantry and never forget what to buy.
-      </p>
+      {/* A personal hello instead of a tagline: who made this and why. */}
+      <div className="mt-4 flex items-start gap-3 rounded-2xl bg-emerald-50 p-3">
+        <img
+          src="/sergio.jpg"
+          alt="Sergio"
+          width={48}
+          height={48}
+          className="h-12 w-12 shrink-0 rounded-full object-cover ring-2 ring-white"
+        />
+        <p className="text-sm text-stone-700">
+          <b>Hi, I'm Sergio!</b> I built this for my wife and me, so the good food we bring home
+          from Costco gets eaten, not thrown away. A little tech, a lot less waste.
+        </p>
+      </div>
 
       <div className="mt-5">
         <TutorialStrip tutorials={TUTORIALS} />
