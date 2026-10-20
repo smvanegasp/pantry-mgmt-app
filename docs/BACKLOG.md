@@ -5,43 +5,16 @@ Move an item to "Done" (with its PR) when it ships, and add new requests here as
 Each stage ends at the usual gate: tests, a Playwright check at 390×844 in a sample demo
 (light and dark), Sergio's phone test through ngrok, then a PR. Merging deploys.
 
-## Next: make the repo public (stage 7d merged in PR #18)
+## In progress: stage 7e, custom domain pantry.sergiovanegas.com
 
-Branch `stage-7d-hardening`. A read-only scan (2026-10-19) of every tracked file and the full
-history found **no keys or secrets**. Built:
-- **Owner login:** 6-digit passcode; 3 wrong tries per network pause owner login there for up
-  to an hour and hide the "I'm Sergio's wife" button (Sergio's idea, enforced by the server);
-  10 wrong per hour overall; the pad says how many tries are left.
-- **No `/api/docs` on AWS.**
-- **ngrok password** via a traffic policy file (`ngrok-policy.example.yml`, real file ignored).
-- **AGENTS.md** no longer has the ngrok domain or the local path. Mentions of his wife stay:
-  the live app already says "I'm Sergio's wife".
-- **`.gitignore`:** `.claude/settings.local.json`, `ngrok-policy.yml`, `*.tfvars`.
-- **Alerts** (`infra/monitoring.tf`): email on Lambda errors, API 5xx, photo reading failing
-  and any wrong owner passcode.
-- **Dependabot:** weekly grouped PRs for uv, npm, Docker, GitHub Actions and Terraform.
-- **Decided (2026-10-19):** Sergio is fine with his Gmail showing in commit history.
-- **Fine to publish as is:** AWS account ID, CloudFront ID and URL (identifiers, not secrets;
-  the deploy role only trusts `main` of this repo; CI never gets secrets on pull requests).
-
-Done by Sergio: 6-digit passcode (local + SSM), alert email (subscription confirmed), ngrok
-password; `infra/monitoring.tf` applied (the wrong-passcode alarm fired and emailed in a live test).
-Final secrets scan (2026-10-19, tracked files and full history of all branches): clean. The
-only personal leftover is the old ngrok domain in 3 old commits, now password-protected.
-Tutorial clip now uses real Open Food Facts photos (CC BY-SA, `tutorial-photos/CREDITS.md`).
-**Left: Sergio makes the repo public** (GitHub Settings, General, Danger Zone, Change visibility).
-
-## Then: stage 7e, custom domain (one of the last steps)
-
-Sergio has a domain. Needs from him: the domain name and where its DNS lives (registrar or
-Route 53).
-- Terraform: an ACM certificate in us-east-1 (DNS validation), the domain as a CloudFront
-  alias, and the DNS records (Route 53 alias, or CNAMEs he adds at his registrar).
-- Swap the CloudFront URL for the domain everywhere it's hardcoded: `SITE_URL` in
-  `.github/workflows/deploy.yml`, `README.md`, `AGENTS.md`. Keep the cloudfront.net URL
-  working (it still points at the same distribution).
-- Cookies are host-only, so sessions on the old URL don't carry over; her owner login is
-  needed once on the new domain. Update her home-screen bookmark.
+Branch `stage-7e-custom-domain`. DNS is at Hostinger (nameservers `dns-parking.com`).
+- `infra/domain.tf`: ACM certificate (DNS validation) + CloudFront alias; outputs the two
+  records Sergio adds at Hostinger. Two applies: the certificate first (`-target`), then the
+  rest once the validation record is in.
+- `SITE_URL` in the deploy workflow, README and AGENTS switched to the new address; merge only
+  after the domain answers, or the deploy's health check fails.
+- Cookies are host-only, so her owner login is needed once on the new domain; update her
+  home-screen icon to the new address. The cloudfront.net URL keeps working.
 
 ## Later
 
@@ -71,5 +44,6 @@ Route 53).
 
 ## Done
 
-- Stage 0–7d: see the status table in AGENTS.md §3 (PRs #1–#18).
+- Stage 0–7d: see the status table in AGENTS.md §3 (PRs #1–#18). Real tutorial photos: #22.
+- Repo made public (2026-10-19) after a clean secrets scan of all files and history.
 - `.codex/config.toml` in history: checked, it only lists MCP servers; nothing to rotate.
