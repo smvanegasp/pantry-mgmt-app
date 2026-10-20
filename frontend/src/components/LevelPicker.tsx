@@ -6,12 +6,15 @@ interface Props {
   onChange: (level: Level) => void;
   compact?: boolean;
   label?: string;
+  /** Leave out "Empty", e.g. for something just bought. */
+  hideEmpty?: boolean;
 }
 
-export function LevelPicker({ value, onChange, compact = false, label = "Fill level" }: Props) {
+export function LevelPicker({ value, onChange, compact = false, label = "Fill level", hideEmpty = false }: Props) {
+  const levels = hideEmpty ? LEVELS.filter((l) => l.value > 0) : LEVELS;
   return (
-    <div role="radiogroup" aria-label={label} className="grid grid-cols-5 gap-1">
-      {LEVELS.map((l) => {
+    <div role="radiogroup" aria-label={label} className={`grid gap-1 ${hideEmpty ? "grid-cols-4" : "grid-cols-5"}`}>
+      {levels.map((l) => {
         const selected = l.value === value;
         const low = l.value <= 25;
         return (

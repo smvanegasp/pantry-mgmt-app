@@ -1,10 +1,38 @@
-"""A realistic sample pantry for demos when the owner's pantry is still empty."""
+"""A realistic sample pantry for demos when the owner's pantry is still empty.
+
+Items show real product photos (Open Food Facts, CC BY-SA; credits in sample_photos/CREDITS.md).
+They live once in S3 under "sample/<name>" and are shared by every sample demo.
+"""
 
 import uuid
 from datetime import date, datetime, timedelta, timezone
+from pathlib import Path
 
-from app import db
+from app import db, storage
 from app.models import Category, Item, ListEntry, Package
+
+SAMPLE_PHOTOS = "sample/"
+PHOTO_DIR = Path(__file__).parent / "sample_photos"
+
+# Item name -> photo file stem in sample_photos/ (<stem>.jpg and <stem>-thumb.jpg).
+PHOTOS = {
+    "Basmati rice": "basmati-rice",
+    "Spaghetti": "spaghetti",
+    "Rolled oats": "rolled-oats",
+    "Black beans": "black-beans",
+    "Diced tomatoes": "diced-tomatoes",
+    "Coconut milk": "coconut-milk",
+    "Milk": "milk",
+    "Eggs": "eggs",
+    "Greek yogurt": "greek-yogurt",
+    "Butter": "butter",
+    "All-purpose flour": "flour",
+    "Sugar": "sugar",
+    "Olive oil": "olive-oil",
+    "Cinnamon": "cinnamon",
+    "Peanut butter": "peanut-butter",
+    "Granola bars": "granola-bars",
+}
 
 # (category, [(name, mode, [(level or count, days until expiry or None), ...]), ...])
 SAMPLE = [
@@ -59,7 +87,30 @@ SAMPLE = [
 SAMPLE_LIST = ["Birthday candles"]
 
 
+_photos_ready = False
+
+
+def _photo_key(name: str) -> str | None:
+    stem = PHOTOS.get(name)
+    return f"{SAMPLE_PHOTOS}{stem}" if stem and (PHOTO_DIR / f"{stem}.jpg").exists() else None
+
+
+def ensure_sample_photos() -> None:
+    """Upload the shared sample photos the first time they're needed (once per process)."""
+    global _photos_ready
+    if _photos_ready:
+        return
+    for stem in PHOTOS.values():
+        full, thumb = PHOTO_DIR / f"{stem}.jpg", PHOTO_DIR / f"{stem}-thumb.jpg"
+        if not full.exists() or storage.get(f"{SAMPLE_PHOTOS}{stem}-thumb.img") is not None:
+            continue
+        storage.put(f"{SAMPLE_PHOTOS}{stem}.img", full.read_bytes(), "image/jpeg")
+        storage.put(f"{SAMPLE_PHOTOS}{stem}-thumb.img", thumb.read_bytes(), "image/jpeg")
+    _photos_ready = True
+
+
 def seed_sample(space: str) -> None:
+    ensure_sample_photos()
     today = date.today()
     now = datetime.now(timezone.utc).isoformat(timespec="seconds")
     for order, (category_name, items) in enumerate(SAMPLE):
@@ -78,6 +129,7 @@ def seed_sample(space: str) -> None:
                     )
                     for amount, days in packages
                 ],
+                photoKey=_photo_key(name),
                 createdAt=now,
                 updatedAt=now,
             )

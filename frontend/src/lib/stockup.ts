@@ -1,10 +1,21 @@
-import type { Category, Item, ItemInput, Package, Suggestion } from "../api";
+import type { Category, Item, ItemInput, Level, Package, Suggestion } from "../api";
 import { newPackage } from "./packages";
 import { normalize, similarNames } from "./search";
 
-/** The package a photographed product adds: a full container, or the counted units. */
-export function packageFrom(s: Suggestion): Package {
-  return { ...newPackage(), level: 100, count: s.mode === "count" ? (s.count ?? 1) : 1, expiresOn: s.expiresOn };
+/** How much a photographed product adds, set on its review card. */
+export interface Amount {
+  level: Level;
+  count: number;
+}
+
+/** Until the person changes it: a full container, or the units the model counted. */
+export function defaultAmount(s: Suggestion): Amount {
+  return { level: 100, count: s.mode === "count" ? (s.count ?? 1) : 1 };
+}
+
+/** The package a photographed product adds. */
+export function packageFrom(s: Suggestion, amount: Amount = defaultAmount(s)): Package {
+  return { ...newPackage(), level: amount.level, count: amount.count, expiresOn: s.expiresOn };
 }
 
 /** A pantry item already holding this product (same name, ignoring case and accents). */
@@ -48,8 +59,13 @@ export function findCategory(categories: Category[], name: string): Category | u
   return categories.find((c) => normalize(c.name).trim() === wanted);
 }
 
-/** Item form values for a reviewed photo (used when fixing a rejected card by hand). */
-export function draftItem(s: Suggestion | null, photoKey: string | null, categories: Category[]): ItemInput {
+/** Item form values for a reviewed photo (a new item from a card, or one fixed by hand). */
+export function draftItem(
+  s: Suggestion | null,
+  photoKey: string | null,
+  categories: Category[],
+  amount?: Amount,
+): ItemInput {
   const categoryId =
     s?.categoryId ?? (s?.newCategoryName ? (findCategory(categories, s.newCategoryName)?.id ?? null) : null);
   return {
@@ -58,7 +74,7 @@ export function draftItem(s: Suggestion | null, photoKey: string | null, categor
     mode: s?.mode ?? "level",
     buyWhenLevel: null,
     buyWhenCount: null,
-    packages: [s ? packageFrom(s) : newPackage()],
+    packages: [s ? packageFrom(s, amount) : newPackage()],
     photoKey,
   };
 }

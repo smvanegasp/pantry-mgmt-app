@@ -5,19 +5,16 @@ Move an item to "Done" (with its PR) when it ships, and add new requests here as
 Each stage ends at the usual gate: tests, a Playwright check at 390×844 in a sample demo
 (light and dark), Sergio's phone test through ngrok, then a PR. Merging deploys.
 
-## Next: stage 8a, set the amount for each photo in "Stock your pantry"
+## In review: stage 8a, amounts in "Stock your pantry", real photos everywhere (PR #26)
 
-Sergio (priority, it affects every stock-up): photos are added as **Full** ("how full" items)
-or with the model's guessed count ("how many"), and the review card has no way to change it
-before swiping. "Add one product" already has the amount controls; stock-up doesn't.
-- On each review card, an amount control below the card (outside the swipe area, like the
-  "Same product?" box): ¼ ½ ¾ Full chips for "how full" items (default Full), a − n +
-  stepper for "how many" items (prefilled with the model's count, default 1).
-- It follows the item it will be added to: when a photo adds to an existing item, use that
-  item's how full / how many.
-- `packageFrom` in `frontend/src/lib/stockup.ts` takes the chosen amount; tests for it.
-- Maybe: let the photo reader guess the level when it can see it (a clear bottle), or leave
-  Full as the default. Decide with Sergio after trying it.
+Branch `stage-8a-stock-up-amounts`, passed Sergio's phone test ("works incredible").
+- Each review card has "How full?" (1/4 1/2 3/4 Full) or "How many?" (stepper, prefilled with the
+  model's count) below it; it follows the item the photo is added to. Defaults unchanged.
+- The sample pantry's 16 items show real product photos (Open Food Facts, mostly Kirkland),
+  shared under S3 `sample/` (see AGENTS §4).
+- Clips re-recorded: "track" adds honey from a real photo (the model fills it in) and scrolls to
+  it; "stock" sets olive oil to 1/2 and almond milk to 4 before accepting.
+- Maybe later: let the photo reader guess the level when it can see it (a clear bottle).
 
 ## Later
 

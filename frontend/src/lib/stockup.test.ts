@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { Category, Item, Package, Suggestion } from "../api";
-import { addTo, draftItem, findCategory, findExisting, findMatch, packageFrom } from "./stockup";
+import { addTo, defaultAmount, draftItem, findCategory, findExisting, findMatch, packageFrom } from "./stockup";
 
 const suggestion = (s: Partial<Suggestion> = {}): Suggestion => ({
   isProduct: true,
@@ -35,6 +35,13 @@ describe("packageFrom", () => {
     expect(packageFrom(suggestion())).toMatchObject({ count: 3, expiresOn: "2028-09-30" });
     expect(packageFrom(suggestion({ count: null }))).toMatchObject({ count: 1 });
     expect(packageFrom(suggestion({ mode: "level", count: null }))).toMatchObject({ level: 100, count: 1 });
+  });
+
+  it("uses the amount chosen on the review card", () => {
+    expect(defaultAmount(suggestion())).toEqual({ level: 100, count: 3 });
+    expect(packageFrom(suggestion(), { level: 100, count: 6 })).toMatchObject({ count: 6, expiresOn: "2028-09-30" });
+    expect(packageFrom(suggestion({ mode: "level" }), { level: 50, count: 1 })).toMatchObject({ level: 50 });
+    expect(draftItem(suggestion({ mode: "level" }), null, categories, { level: 75, count: 1 }).packages[0].level).toBe(75);
   });
 });
 

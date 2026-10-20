@@ -63,7 +63,7 @@ taps when you get home. Photos of products are read by an AI model to fill items
 | 7c | Desktop QR popup, personal welcome note, app icon / PWA, re-recorded tutorial clips | #17 |
 | 7d | Hardening: 6-digit passcode with 3-try pause that hides the login button, email alerts, no API docs on AWS, ngrok password, Dependabot | #18 |
 | 7e | Custom domain pantry.sergiovanegas.com (ACM + CloudFront alias, DNS at Hostinger) | #23 |
-| **8a** | **Set the amount (¼ ½ ¾ Full, or how many) for each photo in "Stock your pantry". Next up.** | |
+| 8a | Amounts (¼ ½ ¾ Full, or how many) per photo in "Stock your pantry"; real product photos on the sample pantry; clips re-recorded | #26 |
 
 **Live at <https://pantry.sergiovanegas.com>** (also <https://d3bg4vze5d4ttm.cloudfront.net>; deployed 2026-10-19; Sergio passed the
 phone gate). Her real pantry there started empty. Local (Docker + ngrok) stays the place to
@@ -143,6 +143,10 @@ frontend/
   before packages existed are upgraded on read.
 - Photos in S3: `<space>/<id>.img` plus `<space>/<id>-thumb.img`. Guests can read her photos
   (their demo is a copy) but only write and delete in their own space.
+- **Sample photos:** the sample pantry's 16 items show real product photos (Open Food Facts,
+  CC BY-SA, `backend/app/sample_photos/` + `CREDITS.md`). They're uploaded once to
+  `sample/<name>` (`ensure_sample_photos`), readable by every session, owned by none (never
+  deleted), and outside the `sb-` expiry rule. Photo keys may be `sample/<name>`.
 
 ### API (all under `/api`; everything except `/health` and `/session` needs a session)
 
