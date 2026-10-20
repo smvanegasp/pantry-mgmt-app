@@ -46,4 +46,7 @@ Branch `stage-7e-custom-domain`. DNS is at Hostinger (nameservers `dns-parking.c
 
 - Stage 0–7d: see the status table in AGENTS.md §3 (PRs #1–#18). Real tutorial photos: #22.
 - Repo made public (2026-10-19) after a clean secrets scan of all files and history.
+- First Dependabot round: #20 (Actions majors) and #21 (Vite 8, TypeScript 7, plugin-react 6;
+  tested locally on Node 22: build, tests, dev server, main flows, a real photo read); #19
+  (Python 3.14 image) closed, Python image jumps now ignored; laptop needs Node 22+.
 - `.codex/config.toml` in history: checked, it only lists MCP servers; nothing to rotate.

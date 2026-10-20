@@ -37,7 +37,10 @@ taps when you get home. Photos of products are read by an AI model to fill items
 - **UI style:** no emojis anywhere. Use Phosphor icons (`@phosphor-icons/react`,
   `weight="fill"`) with purpose and solid colors. Add an `InfoTip` (i) popover wherever a
   feature isn't obvious. Black/charcoal dark mode (not warm brown).
-- **Python:** managed with **uv** (`uv sync`, `uv run pytest`, `uv add`).
+- **Python:** managed with **uv** (`uv sync`, `uv run pytest`, `uv add`). **Node.js 22+** on the
+  laptop (Vite 8 needs it; `frontend/package.json` engines); CI and the web container use 22.
+- **Dependabot:** minor/patch updates come grouped (merge when CI is green); major versions come
+  as separate PRs to test locally first; Python version jumps of the Docker image are ignored.
 
 ## 3. Status
 
