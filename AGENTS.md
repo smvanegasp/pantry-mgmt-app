@@ -63,7 +63,7 @@ taps when you get home. Photos of products are read by an AI model to fill items
 | 7c | Desktop QR popup, personal welcome note, app icon / PWA, re-recorded tutorial clips | #17 |
 | 7d | Hardening: 6-digit passcode with 3-try pause that hides the login button, email alerts, no API docs on AWS, ngrok password, Dependabot | #18 |
 | 7e | Custom domain pantry.sergiovanegas.com (ACM + CloudFront alias, DNS at Hostinger) | #23 |
-| **8a** | **Set the amount (¼ ½ ¾ Full, or how many) for each photo in "Stock your pantry". Next up.** | |
+| 8a | Amounts (¼ ½ ¾ Full, or how many) per photo in "Stock your pantry"; real product photos on the sample pantry; clips re-recorded | #26 |
 
 **Live at <https://pantry.sergiovanegas.com>** (also <https://d3bg4vze5d4ttm.cloudfront.net>; deployed 2026-10-19; Sergio passed the
 phone gate). Her real pantry there started empty. Local (Docker + ngrok) stays the place to

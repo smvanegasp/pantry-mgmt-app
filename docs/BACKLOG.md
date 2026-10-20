@@ -5,9 +5,9 @@ Move an item to "Done" (with its PR) when it ships, and add new requests here as
 Each stage ends at the usual gate: tests, a Playwright check at 390×844 in a sample demo
 (light and dark), Sergio's phone test through ngrok, then a PR. Merging deploys.
 
-## In review: stage 8a, amounts in "Stock your pantry", real photos everywhere
+## In review: stage 8a, amounts in "Stock your pantry", real photos everywhere (PR #26)
 
-Branch `stage-8a-stock-up-amounts`.
+Branch `stage-8a-stock-up-amounts`, passed Sergio's phone test ("works incredible").
 - Each review card has "How full?" (1/4 1/2 3/4 Full) or "How many?" (stepper, prefilled with the
   model's count) below it; it follows the item the photo is added to. Defaults unchanged.
 - The sample pantry's 16 items show real product photos (Open Food Facts, mostly Kirkland),
