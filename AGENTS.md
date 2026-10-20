@@ -81,7 +81,7 @@ Phone ─ HTTPS ─▶ (local) ngrok ─▶ Vite dev server :5173 ─ /api proxy
 ```
 
 - **Backend:** Python 3.12, FastAPI, boto3, httpx, itsdangerous. `backend/app/`.
-- **Frontend:** React 19 + TypeScript + Vite 6, Tailwind v4, TanStack Query, Phosphor icons.
+- **Frontend:** React 19 + TypeScript 7 + Vite 8, Tailwind v4, TanStack Query, Phosphor icons.
   `frontend/src/`. Same-origin `/api`, so there's no CORS and auth uses an httpOnly cookie.
 - **One Docker image** for local and Lambda: `backend/Dockerfile` has an `app` stage (compose
   and CI) and a final `lambda` stage that adds the AWS Lambda Web Adapter (built at deploy time
