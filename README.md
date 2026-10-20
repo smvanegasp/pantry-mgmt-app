@@ -5,11 +5,22 @@ what's running low, check things off in the store, and put groceries away in a f
 you get home. Snap a photo of a product and an AI model fills in its name, category and
 expiry date.
 
-**Live:** <https://pantry.sergiovanegas.com>. Tap **Continue** for a private demo
-with a sample pantry. It resets after 24 hours and can't touch anyone else's data.
+**Live:** <https://pantry.sergiovanegas.com>. Tap **Continue** for a private demo: a copy of
+the real household pantry (or a sample one, with real product photos). It resets after 24 hours
+and can't touch anyone else's data. On a computer, a QR code offers to open it on your phone.
 
 One household uses it for real (the owner logs in with a passcode); everyone else gets a
 demo sandbox with the full experience, photo reading included.
+
+**What it does**
+- **Pantry:** how full (¼ ½ ¾ Full) or how many, per package or expiration date; quick taps on
+  each card; filters, search, and sections by category, expiry or stock (Low / Normal / Plenty).
+- **Stock your pantry:** snap groceries one after another; an AI model reads each label in the
+  background (name, category, expiry); swipe to accept, set how much you bought, and items you
+  already have are added to instead of duplicated.
+- **Grocery list:** generated from what's running low, checked off in the store, and put away
+  in a few taps back home ("I'm home").
+- Installs to the home screen, works in dark mode, and is built for one-handed phone use.
 
 - [How it's built](#how-its-built)
 - [How a change gets to production](#how-a-change-gets-to-production)
