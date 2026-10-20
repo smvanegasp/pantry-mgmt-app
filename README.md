@@ -87,7 +87,8 @@ conventions, rules) and [docs/BACKLOG.md](docs/BACKLOG.md) holds open work.
 
 ## Run it locally
 
-Needs Docker. Python and Node are only needed to run tests outside containers.
+Needs Docker. Python (uv) and Node.js 22+ are only needed outside containers: tests, the
+manual deploy script and recording the tutorial clips.
 
 ```sh
 docker compose up -d --build
