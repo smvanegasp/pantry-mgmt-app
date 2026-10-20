@@ -59,7 +59,7 @@ taps when you get home. Photos of products are read by an AI model to fill items
 | 7b | No duplicate items: photo reading knows the pantry's names; similar-item check when adding or stocking up | #16 |
 | 7c | Desktop QR popup, personal welcome note, app icon / PWA, re-recorded tutorial clips | #17 |
 | 7d | Hardening: 6-digit passcode with 3-try pause that hides the login button, email alerts, no API docs on AWS, ngrok password, Dependabot | #18 |
-| 7e | Custom domain on CloudFront (ACM + DNS), swap the URL in the deploy workflow and docs | |
+| 7e | Custom domain pantry.sergiovanegas.com (ACM + CloudFront alias, DNS at Hostinger) | #23 |
 
 **Live at <https://pantry.sergiovanegas.com>** (also <https://d3bg4vze5d4ttm.cloudfront.net>; deployed 2026-10-19; Sergio passed the
 phone gate). Her real pantry there started empty. Local (Docker + ngrok) stays the place to
