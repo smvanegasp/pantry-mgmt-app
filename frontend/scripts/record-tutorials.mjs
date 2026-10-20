@@ -65,12 +65,24 @@ const api = (page, method, path, data) =>
   page.request.fetch(`${BASE}/api${path}`, { method, data }).then((r) => r.json());
 const tab = (page, name) => page.getByRole("button", { name: new RegExp(`^${name}`) });
 
+/**
+ * Opens the app and waits until the first screen is fully drawn, product photos included.
+ * The clip starts here; everything recorded before it (loading) is trimmed off.
+ */
+async function open(page, ready) {
+  await page.goto(BASE);
+  await ready.waitFor();
+  await page.waitForFunction(() =>
+    [...document.images].filter((i) => i.getBoundingClientRect().top < innerHeight).every((i) => i.complete),
+  );
+  page.clipStart = Date.now();
+}
+
 const CLIPS = [
   {
     id: "track",
     async run(page) {
-      await page.goto(BASE);
-      await page.getByRole("button", { name: /^Milk/ }).waitFor();
+      await open(page, page.getByRole("button", { name: /^Milk/ }));
       await pause(page, 900);
       const milk = page.getByRole("radiogroup", { name: "Milk fill level" });
       await tap(page, milk.getByRole("radio", { name: "¼" }), 1100);
@@ -102,8 +114,7 @@ const CLIPS = [
   {
     id: "stock",
     async run(page) {
-      await page.goto(BASE);
-      await page.getByRole("button", { name: "Add products" }).waitFor();
+      await open(page, page.getByRole("button", { name: /^Milk/ }));
       await pause(page, 600);
       await tap(page, page.getByRole("button", { name: "Add products" }), 900);
       await tap(page, page.getByRole("button", { name: /^Stock up/ }), 1000);
@@ -149,8 +160,7 @@ const CLIPS = [
   {
     id: "list",
     async run(page) {
-      await page.goto(BASE);
-      await tab(page, "List").waitFor();
+      await open(page, tab(page, "List"));
       await pause(page, 600);
       await tap(page, tab(page, "List"), 900);
       await tap(page, page.getByRole("button", { name: "Generate list", exact: true }), 1800);
@@ -165,8 +175,7 @@ const CLIPS = [
       await api(page, "POST", "/list/generate");
     },
     async run(page) {
-      await page.goto(BASE);
-      await tab(page, "List").waitFor();
+      await open(page, tab(page, "List"));
       await tap(page, tab(page, "List"), 900);
       for (const name of ["Rolled oats", "Diced tomatoes", "Sugar", "Greek yogurt"]) {
         await tap(page, page.getByRole("checkbox", { name: new RegExp(name) }), 650);
@@ -183,8 +192,7 @@ const CLIPS = [
       }
     },
     async run(page) {
-      await page.goto(BASE);
-      await tab(page, "List").waitFor();
+      await open(page, tab(page, "List"));
       await tap(page, tab(page, "List"), 900);
       await tap(page, page.getByRole("button", { name: /I'm home/ }), 1000);
       const sheet = page.getByRole("dialog");
@@ -210,8 +218,6 @@ async function record(browser, clip, workDir) {
   const page = await context.newPage();
   await api(page, "POST", "/session/guest/reset?sample=true");
   await clip.setup?.(page);
-  // Show a blank page while setting up, then trim that part off the video.
-  const trimStart = (Date.now() - started) / 1000;
   try {
     await clip.run(page);
   } catch (err) {
@@ -221,6 +227,8 @@ async function record(browser, clip, workDir) {
     await context.close();
     throw new Error(`Clip "${clip.id}" failed (screenshot: ${shot}): ${err.message}`);
   }
+  // Setup and page loading are trimmed off: the clip starts on a fully drawn screen.
+  const trimStart = (page.clipStart - started) / 1000;
   const video = page.video();
   await context.close();
   const raw = join(workDir, `${clip.id}.webm`);
