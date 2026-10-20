@@ -6,12 +6,14 @@ import { createPortal } from "react-dom";
 import { api, type Category, type Item, type ItemInput, type Package } from "../api";
 import { useCategories, useItems } from "../hooks";
 import { formatExpiry } from "../lib/dates";
-import { addTo, draftItem, findCategory, findMatch, packageFrom } from "../lib/stockup";
+import { addTo, defaultAmount, draftItem, findCategory, findMatch, packageFrom, type Amount } from "../lib/stockup";
 import { useShotQueue, type Shot } from "../lib/useShotQueue";
 import { BottomSheet } from "./BottomSheet";
 import { CameraCapture } from "./CameraCapture";
+import { CountStepper } from "./CountStepper";
 import { InfoTip } from "./InfoTip";
 import { ItemForm } from "./ItemForm";
+import { LevelPicker } from "./LevelPicker";
 import { SwipeDeck } from "./SwipeDeck";
 
 type Step = "capture" | "review" | "fix" | "done";
@@ -43,7 +45,8 @@ function CardContent({ shot, existing, categories }: { shot: Shot; existing?: It
           <>
             <p className="text-xl font-semibold">{s.name}</p>
             <p className="text-sm text-stone-600">
-              {[category, s.mode === "count" ? `${s.count ?? 1} counted` : "Full", s.expiresOn && formatExpiry(s.expiresOn)]
+              {/* The amount is set below the card. */}
+              {[category, s.expiresOn && formatExpiry(s.expiresOn)]
                 .filter(Boolean)
                 .join(" · ")}
             </p>
@@ -80,6 +83,9 @@ export function StockUpSheet({ onClose }: { onClose: () => void }) {
   const [fixing, setFixing] = useState<Shot | null>(null);
   // Photos whose similar-named pantry item the person chose to add to (instead of a new item).
   const [joinSimilar, setJoinSimilar] = useState<Set<string>>(new Set());
+  // How much each photo adds, when the person changed it on the card.
+  const [amounts, setAmounts] = useState<Record<string, Amount>>({});
+  const amountOf = (shot: Shot) => amounts[shot.id] ?? defaultAmount(shot.suggestion!);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   // Categories created during this session, so two photos don't create the same one twice.
@@ -120,11 +126,14 @@ export function StockUpSheet({ onClose }: { onClose: () => void }) {
     const s = shot.suggestion!;
     const existing = targetOf(shot);
     if (existing) {
-      await api.updateItem(existing.id, addTo(existing, [packageFrom(s)], shot.photoKey));
+      await api.updateItem(existing.id, addTo(existing, [packageFrom(s, amountOf(shot))], shot.photoKey));
       return { kind: "packaged", itemId: existing.id, previous: existing.packages };
     }
     const categoryId = s.categoryId ?? (s.newCategoryName ? await categoryIdFor(s.newCategoryName) : null);
-    const created = await api.createItem({ ...draftItem(s, shot.photoKey, categories), categoryId });
+    const created = await api.createItem({
+      ...draftItem(s, shot.photoKey, categories, amountOf(shot)),
+      categoryId,
+    });
     return { kind: "created", itemId: created.id };
   }
 
@@ -246,6 +255,34 @@ export function StockUpSheet({ onClose }: { onClose: () => void }) {
                 onDecide={decide}
               />
             </div>
+            {usable(top) && (() => {
+              // Counted the way the item it goes into counts (how full / how many).
+              const mode = targetOf(top)?.mode ?? top.suggestion!.mode;
+              const amount = amountOf(top);
+              const set = (patch: Partial<Amount>) => setAmounts((a) => ({ ...a, [top.id]: { ...amount, ...patch } }));
+              return (
+                <div className="mt-3 flex items-center gap-3 rounded-xl border border-stone-200 bg-white px-3 py-2">
+                  <span className="shrink-0 text-sm font-medium text-stone-700">
+                    {mode === "level" ? "How full?" : "How many?"}
+                  </span>
+                  {mode === "level" ? (
+                    <div className="flex-1">
+                      <LevelPicker
+                        compact
+                        hideEmpty
+                        label="How full?"
+                        value={amount.level}
+                        onChange={(level) => set({ level })}
+                      />
+                    </div>
+                  ) : (
+                    <div className="ml-auto">
+                      <CountStepper compact min={1} value={amount.count} onChange={(count) => set({ count })} />
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
             {(() => {
               // A similar name ("Kirkland black beans" vs "Black beans"): the person decides.
               const match = matchOf(top);
