@@ -143,6 +143,10 @@ frontend/
   before packages existed are upgraded on read.
 - Photos in S3: `<space>/<id>.img` plus `<space>/<id>-thumb.img`. Guests can read her photos
   (their demo is a copy) but only write and delete in their own space.
+- **Sample photos:** the sample pantry's 16 items show real product photos (Open Food Facts,
+  CC BY-SA, `backend/app/sample_photos/` + `CREDITS.md`). They're uploaded once to
+  `sample/<name>` (`ensure_sample_photos`), readable by every session, owned by none (never
+  deleted), and outside the `sb-` expiry rule. Photo keys may be `sample/<name>`.
 
 ### API (all under `/api`; everything except `/health` and `/session` needs a session)
 

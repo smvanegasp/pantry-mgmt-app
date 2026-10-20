@@ -39,8 +39,12 @@ class Package(BaseModel):
 
 
 Packages = Annotated[list[Package], Field(min_length=1, max_length=20)]
-# "<space>/<photo id>" as returned by POST /api/photos.
-PhotoKey = Annotated[str, StringConstraints(pattern=r"^(main|sb-\d+-[0-9a-f]{32})/[0-9a-f]{32}$")]
+# "<space>/<photo id>" as returned by POST /api/photos, or "sample/<name>" for the sample
+# pantry's shared product photos (app/sample_photos).
+PhotoKey = Annotated[
+    str,
+    StringConstraints(pattern=r"^((main|sb-\d+-[0-9a-f]{32})/[0-9a-f]{32}|sample/[a-z0-9-]{1,40})$"),
+]
 
 
 class ItemIn(BaseModel):

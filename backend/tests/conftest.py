@@ -4,7 +4,7 @@ import pytest
 from fastapi.testclient import TestClient
 from moto import mock_aws
 
-from app import db, storage
+from app import db, sample_data, storage
 from app.main import app
 from app.passcode import hash_passcode
 
@@ -33,6 +33,8 @@ def aws():
     with mock_aws():
         db.get_table.cache_clear()
         storage.get_s3.cache_clear()
+        # Each test's S3 starts empty, so the shared sample photos must be uploaded again.
+        sample_data._photos_ready = False
         db.create_table_if_missing()
         storage.create_bucket_if_missing()
         yield

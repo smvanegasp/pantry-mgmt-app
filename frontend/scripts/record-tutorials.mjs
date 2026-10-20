@@ -83,11 +83,20 @@ const CLIPS = [
       await tap(page, page.getByRole("button", { name: "Close search" }), 800);
       await tap(page, page.getByRole("button", { name: "Add products" }), 900);
       await tap(page, page.getByRole("button", { name: /Add one product/ }), 800);
-      await type(page, page.getByLabel("Name"), "Honey");
-      await page.getByRole("dialog").getByLabel("Category", { exact: true }).selectOption({ label: "Baking" });
-      await pause(page, 600);
-      await tap(page, page.getByRole("dialog").getByRole("button", { name: "+1y" }), 900);
-      await tap(page, page.getByRole("button", { name: "Add to pantry" }), 1500);
+      // A real photo from the library; the model fills in the name, category and date.
+      const sheet = page.getByRole("dialog", { name: "Add item" });
+      await sheet.getByLabel("Choose item photo").setInputFiles(join(PHOTOS, "honey.jpg"));
+      await sheet.getByText("Filled in from the photo").waitFor({ timeout: 30000 });
+      await pause(page, 1600);
+      await tap(page, sheet.getByRole("button", { name: "+1y" }), 900);
+      await tap(page, page.getByRole("button", { name: "Add to pantry" }), 900);
+      // Scroll down to the new item, the way a thumb would.
+      const honey = page.getByRole("button", { name: /honey/i }).first();
+      for (let i = 0; i < 12 && !(await honey.evaluate((el) => el.getBoundingClientRect().top < 520)); i++) {
+        await page.mouse.wheel(0, 140);
+        await pause(page, 120);
+      }
+      await pause(page, 1800);
     },
   },
   {
@@ -108,16 +117,31 @@ const CLIPS = [
         .setInputFiles([join(PHOTOS, "almond-milk.jpg"), join(PHOTOS, "ketchup.jpg")]);
       await pause(page, 1200);
       await tap(page, page.getByRole("button", { name: /^Review 3 photos/ }), 900);
-      for (let card = 0; card < 3; card++) {
-        const accept = page.getByRole("button", { name: "Looks right" });
+      const review = page.getByRole("dialog", { name: "Review" });
+      // Set how much each photo adds: half a bottle of oil, four cartons of almond milk.
+      const amounts = [
+        () => tap(page, review.getByRole("radiogroup", { name: "How full?" }).getByRole("radio", { name: "½" }), 1900),
+        async () => {
+          // The model decides how it's counted; handle either.
+          if (await review.getByRole("radiogroup", { name: "How full?" }).count()) {
+            return tap(page, review.getByRole("radio", { name: "¾" }), 1900);
+          }
+          const value = () => review.getByRole("button", { name: "Increase" }).locator("xpath=preceding-sibling::span[1]");
+          while (Number(await value().innerText()) < 4) await tap(page, review.getByRole("button", { name: "Increase" }), 350);
+          await pause(page, 1500);
+        },
+        () => pause(page, 400),
+      ];
+      for (const setAmount of amounts) {
         // Wait until the photo is read (the button is disabled while it is).
         await page.waitForFunction(
           () => !document.querySelector('[aria-label="Looks right"]')?.hasAttribute("disabled"),
           null,
           { timeout: 30000 },
         );
-        await pause(page, 1800);
-        await tap(page, accept, 1000);
+        await pause(page, 1400);
+        await setAmount();
+        await tap(page, review.getByRole("button", { name: "Looks right" }), 1000);
       }
       await tap(page, page.getByRole("button", { name: "Done" }), 1600);
     },

@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, File, HTTPException, Response, UploadFil
 from pydantic import BaseModel
 
 from app import db, ratelimit, storage
+from app.sample_data import SAMPLE_PHOTOS
 from app.sandbox import OWNER_SPACE, PREFIX
 from app.space import current_space
 
@@ -49,8 +50,13 @@ def owns(space: str, photo_key: str) -> bool:
 
 
 def can_read(space: str, photo_key: str) -> bool:
-    # Demos are copies of the owner's pantry, so they show the owner's photos too.
-    return owns(space, photo_key) or photo_key.startswith(f"{OWNER_SPACE}/")
+    # Demos are copies of the owner's pantry, so they show the owner's photos too; the sample
+    # pantry's photos are shared by everyone (and owned by no space, so never deleted).
+    return (
+        owns(space, photo_key)
+        or photo_key.startswith(f"{OWNER_SPACE}/")
+        or photo_key.startswith(SAMPLE_PHOTOS)
+    )
 
 
 def delete_photo(space: str, photo_key: str | None) -> None:
