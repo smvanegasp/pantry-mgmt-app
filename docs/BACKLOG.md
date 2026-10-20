@@ -5,20 +5,22 @@ Move an item to "Done" (with its PR) when it ships, and add new requests here as
 Each stage ends at the usual gate: tests, a Playwright check at 390×844 in a sample demo
 (light and dark), Sergio's phone test through ngrok, then a PR. Merging deploys.
 
-## In progress: stage 7e, custom domain pantry.sergiovanegas.com
+## Next: stage 8a, set the amount for each photo in "Stock your pantry"
 
-Branch `stage-7e-custom-domain`. DNS is at Hostinger (nameservers `dns-parking.com`).
-- `infra/domain.tf`: ACM certificate (DNS validation) + CloudFront alias; outputs the two
-  records Sergio adds at Hostinger. Two applies: the certificate first (`-target`), then the
-  rest once the validation record is in.
-- `SITE_URL` in the deploy workflow, README and AGENTS switched to the new address; merge only
-  after the domain answers, or the deploy's health check fails.
-- Cookies are host-only, so her owner login is needed once on the new domain; update her
-  home-screen icon to the new address. The cloudfront.net URL keeps working.
+Sergio (priority, it affects every stock-up): photos are added as **Full** ("how full" items)
+or with the model's guessed count ("how many"), and the review card has no way to change it
+before swiping. "Add one product" already has the amount controls; stock-up doesn't.
+- On each review card, an amount control below the card (outside the swipe area, like the
+  "Same product?" box): ¼ ½ ¾ Full chips for "how full" items (default Full), a − n +
+  stepper for "how many" items (prefilled with the model's count, default 1).
+- It follows the item it will be added to: when a photo adds to an existing item, use that
+  item's how full / how many.
+- `packageFrom` in `frontend/src/lib/stockup.ts` takes the chosen amount; tests for it.
+- Maybe: let the photo reader guess the level when it can see it (a clear bottle), or leave
+  Full as the default. Decide with Sergio after trying it.
 
 ## Later
 
-- **Copy her local pantry to AWS?** Only if Sergio asks; she starts empty on AWS.
 - **Staging environment on AWS:** not now (one real user, point-in-time recovery covers
   mistakes). Revisit if a broken deploy would really hurt.
 
@@ -39,14 +41,17 @@ Branch `stage-7e-custom-domain`. DNS is at Hostinger (nameservers `dns-parking.c
 
 ## For Sergio (outside the code)
 
-- Set a monthly spend limit in the Groq console (AWS budgets don't see Groq).
-- Add the AWS link to his wife's home screen; she should no longer use the ngrok link.
+- Move his wife's home-screen icon to https://pantry.sergiovanegas.com (log in once there).
 
 ## Done
 
-- Stage 0–7d: see the status table in AGENTS.md §3 (PRs #1–#18). Real tutorial photos: #22.
+- Stage 0–7e: see the status table in AGENTS.md §3 (PRs #1–#23). Real tutorial photos: #22.
+- Groq monthly spend limit set to $5 (2026-10-19).
+- **Decided:** live demos copy her real pantry (once it has items); Sergio likes that it shows
+  the app is in real use. Visitors only ever change their private copy.
 - Repo made public (2026-10-19) after a clean secrets scan of all files and history.
 - First Dependabot round: #20 (Actions majors) and #21 (Vite 8, TypeScript 7, plugin-react 6;
   tested locally on Node 22: build, tests, dev server, main flows, a real photo read); #19
-  (Python 3.14 image) closed, Python image jumps now ignored; laptop needs Node 22+.
+  (Python 3.14 image) closed, Python image jumps now ignored; laptop needs Node 22+ (#24;
+  Nodist removed from the system PATH, Node 24 LTS installed).
 - `.codex/config.toml` in history: checked, it only lists MCP servers; nothing to rotate.
