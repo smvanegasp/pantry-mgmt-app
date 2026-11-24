@@ -42,9 +42,9 @@ function Clip({
   }, [index, onVisible, reducedMotion]);
 
   return (
-    <li ref={card} className="w-64 shrink-0 snap-center text-center">
+    <li ref={card} className="w-64 shrink-0 snap-center text-center md:w-auto">
       {/* Sized from the screen height so the welcome page fits without scrolling. */}
-      <div className="mx-auto w-[clamp(6rem,calc((100dvh-35rem)*0.462),12rem)] overflow-hidden rounded-[1.5rem] border-[5px] border-stone-900 bg-stone-900 shadow-lg">
+      <div className="mx-auto w-[clamp(6rem,calc((100dvh-35rem)*0.462),12rem)] md:w-full md:max-w-[12rem] overflow-hidden rounded-[1.5rem] border-[5px] border-stone-900 bg-stone-900 shadow-lg">
         <video
           ref={video}
           src={`/tutorials/${tutorial.id}.mp4`}
@@ -80,13 +80,13 @@ export function TutorialStrip({ tutorials }: { tutorials: Tutorial[] }) {
       <ul
         ref={strip}
         aria-label="How it works"
-        className="-mx-6 flex snap-x snap-mandatory gap-2 overflow-x-auto px-[calc(50%-8rem)] pb-2 [scrollbar-width:none]"
+        className="-mx-6 flex snap-x snap-mandatory gap-2 overflow-x-auto px-[calc(50%-8rem)] pb-2 [scrollbar-width:none] md:mx-0 md:grid md:snap-none md:grid-cols-3 md:gap-x-6 md:gap-y-8 md:overflow-visible md:px-0 lg:grid-cols-5"
       >
         {tutorials.map((t, i) => (
           <Clip key={t.id} tutorial={t} index={i} onVisible={setActive} />
         ))}
       </ul>
-      <div className="mt-2 flex justify-center gap-2">
+      <div className="mt-2 flex justify-center gap-2 md:hidden">
         {tutorials.map((t, i) => (
           <button
             key={t.id}

@@ -1,11 +1,12 @@
-import { Basket, Camera, CameraPlus, CaretDown, CaretRight, WarningCircle } from "@phosphor-icons/react";
-import { useState } from "react";
+import { Camera, CameraPlus, CaretDown, CaretRight, WarningCircle } from "@phosphor-icons/react";
+import { useEffect, useState } from "react";
 
 import type { Item, ItemInput } from "../api";
 import { AddMenu } from "../components/AddMenu";
 import { BottomSheet } from "../components/BottomSheet";
 import { ItemCard } from "../components/ItemCard";
 import { ItemForm } from "../components/ItemForm";
+import { EmptyState } from "../components/Mascot";
 import { PantryControls } from "../components/PantryControls";
 import { StockUpSheet } from "../components/StockUpSheet";
 import {
@@ -117,6 +118,21 @@ export function PantryPage() {
 
   const total = allItems.length;
 
+  // Computers: "/" jumps to search, like most web apps.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const t = e.target as HTMLElement;
+      if (e.key !== "/" || t.closest("input, textarea, select, [contenteditable]")) return;
+      const box = document.querySelector<HTMLInputElement>('input[inputmode="search"]');
+      if (box) {
+        e.preventDefault();
+        box.focus();
+      }
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, []);
+
   return (
     <div className="pb-28">
       {total > 0 && (
@@ -133,38 +149,36 @@ export function PantryPage() {
       {items.error && <p className="text-red-600">Couldn't load your pantry: {items.error.message}</p>}
 
       {items.isSuccess && total === 0 && (
-        <div className="mt-16 text-center text-stone-500">
-          <Basket size={48} weight="fill" className="mx-auto text-stone-300" aria-hidden />
-          <p className="mt-2 font-medium">Your pantry is empty</p>
+        <EmptyState title="Your pantry is empty">
           <p className="text-sm">Snap a photo of each product and it's filled in for you.</p>
           <button
             type="button"
             onClick={() => setStockingUp(true)}
-            className="mt-5 inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-5 py-3 font-semibold text-white"
+            className="mt-5 inline-flex items-center gap-2 rounded-full bg-emerald-600 px-6 py-3 font-bold text-white shadow-lg"
           >
             <CameraPlus size={22} weight="fill" aria-hidden /> Stock your pantry with photos
           </button>
           <button
             type="button"
             onClick={() => setSheet({ kind: "new" })}
-            className="mt-3 block w-full text-sm font-medium text-emerald-700"
+            className="mt-3 block w-full text-sm font-bold text-emerald-700"
           >
             Or add one item at a time
           </button>
-        </div>
+        </EmptyState>
       )}
 
       {total > 0 && groups.length === 0 && (
-        <div className="mt-10 text-center text-stone-500">
-          <p>No items match these filters.</p>
+        <EmptyState title="Nothing matches">
+          <p className="text-sm">Try another word or filter.</p>
           <button
             type="button"
             onClick={() => setQuery({ ...DEFAULT_VIEW, sort: view.sort, search: "" })}
-            className="mt-2 font-medium text-emerald-700"
+            className="mt-3 rounded-full bg-emerald-100 px-4 py-2 font-bold text-emerald-800"
           >
             Clear filters
           </button>
-        </div>
+        </EmptyState>
       )}
 
       {groups.length > 0 && (filtered || grouped) && (
@@ -182,7 +196,7 @@ export function PantryPage() {
         </div>
       )}
 
-      <div className="space-y-6">
+      <div className="space-y-7">
         {groups.map((group) => {
           // Searching shows every match, even in folded sections.
           const open = group.name === null || searching || !folded.ids.includes(group.key);
@@ -195,14 +209,16 @@ export function PantryPage() {
                     type="button"
                     onClick={() => toggleFold(group.key)}
                     aria-expanded={open}
-                    className="flex w-full items-center gap-1.5 py-1 text-left text-sm font-semibold tracking-wide text-stone-500 uppercase"
+                    className="flex w-full items-center gap-1.5 rounded-full py-1 text-left text-sm font-extrabold tracking-wide text-stone-600"
                   >
                     {open ? (
                       <CaretDown size={14} weight="bold" aria-hidden />
                     ) : (
                       <CaretRight size={14} weight="bold" aria-hidden />
                     )}
-                    {group.name} <span className="font-normal">· {group.items.length}</span>
+                    <span className="h-2.5 w-2.5 rounded-full bg-emerald-400" aria-hidden />
+                    {group.name}{" "}
+                    <span className="rounded-full bg-stone-100 px-2 text-xs font-bold text-stone-500">{group.items.length}</span>
                     {!open && low > 0 && (
                       <span className="ml-auto inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium tracking-normal text-amber-800 normal-case">
                         <WarningCircle size={12} weight="fill" aria-hidden /> {low} low
@@ -212,7 +228,7 @@ export function PantryPage() {
                 </h2>
               )}
               {open && (
-                <ul className="space-y-2">
+                <ul className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
                   {group.items.map((item) => (
                     <ItemCard
                       key={item.id}
@@ -232,10 +248,11 @@ export function PantryPage() {
       <button
         type="button"
         onClick={() => setAddMenu(true)}
-        className="fixed right-5 bottom-[calc(5rem+env(safe-area-inset-bottom))] z-30 inline-flex h-14 w-14 items-center justify-center rounded-full bg-emerald-600 text-white shadow-[0_6px_16px_rgba(0,0,0,0.35),0_2px_4px_rgba(0,0,0,0.25)] active:bg-emerald-700"
+        className="fixed right-5 bottom-[calc(5.5rem+env(safe-area-inset-bottom))] z-30 inline-flex h-16 w-16 items-center justify-center rounded-full border-4 border-white bg-emerald-600 text-white shadow-lg hover:bg-emerald-500 md:right-10 md:bottom-10 md:h-auto md:w-auto md:gap-2 md:px-6 md:py-4 md:font-bold"
         aria-label="Add products"
       >
         <Camera size={28} weight="fill" aria-hidden />
+        <span className="hidden md:inline">Add products</span>
       </button>
 
       {addMenu && (

@@ -32,7 +32,7 @@ const TAP_OVERLAY = () => {
     style.textContent = `
       [data-demo-banner] { display: none !important; }
       .tap-dot { position: fixed; z-index: 9999; width: 44px; height: 44px; margin: -22px 0 0 -22px;
-        border-radius: 50%; background: rgba(5, 150, 105, .35); border: 2px solid rgba(5, 150, 105, .8);
+        border-radius: 50%; background: rgba(236, 72, 120, .35); border: 2px solid rgba(236, 72, 120, .8);
         pointer-events: none; animation: tap .6s ease-out forwards; }
       @keyframes tap { from { transform: scale(.4); opacity: 1 } to { transform: scale(1.2); opacity: 0 } }`;
     document.head.append(style);

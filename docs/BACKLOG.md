@@ -6,11 +6,18 @@ ships, and add new requests here as they come up. Each stage ends at the usual g
 Playwright check at 390×844 in a **sample** demo (light and dark), Sergio's phone test through
 ngrok, then a PR. Merging deploys.
 
-## Now: waiting for her feedback
+## Now: stage 9a, the "kawaii" redesign (in review)
 
-Everything is merged and live at <https://pantry.sergiovanegas.com> (2026-10-20); no open PRs.
-Sergio's wife is using the app; Sergio will come back with her feedback. Next stages (8b, 8c,
-...) come from it.
+Sergio had Lovable redesign the frontend and wants it live. Visual only: sakura pink / matcha /
+cream theme (stone and emerald re-tinted in `index.css`, new `matcha` scale), Nunito font, the
+onigiri mascot (`components/Mascot.tsx`: loading, empty states, petal shower when the cart is
+done), jar-fill level picker with faces, floating pill tab bar on phones, a real desktop layout
+from 768px (collapsible sidebar, card grid, page titles), the QR button no longer pops up,
+night-blue dark mode, new icons and favicon, clips re-recorded. Lovable's own scaffolding
+(TanStack Start, shadcn, its fake API) was not ported. Gate: Sergio's phone test, then PR.
+After it ships, her home-screen icon may keep the old basket until she re-adds it.
+
+Then: waiting for her feedback; next stages come from it.
 
 ## Her feedback
 
@@ -30,13 +37,16 @@ Candidates to weigh against her feedback; none is planned yet.
   visible; the AI model stays the fallback and reads the expiry date.
 - **Tune the recognition prompt with real photos.** Collect the cases she sees going wrong
   (curved labels, glare, small dates) and adjust `backend/app/recognize.py`.
-- **Dark mode spot checks** on rarely seen screens: restock sheet, passcode pad, fix-up form,
+- **Petal shower** also plays when the "I'm home" sheet is closed without putting anything
+  away. Harmless; only celebrate real put-aways if it feels off.
+- **Dark mode spot checks** (night-blue since 9a) on rarely seen screens: restock sheet, passcode pad, fix-up form,
   photo viewer, error states.
 - **Escape closes too much:** with the photo viewer open inside an item sheet, Escape closes
   both. Make it close only the top layer.
 - **Smallest phones:** on 375×667 (iPhone SE) the welcome page scrolls about 100px since the
-  personal note was added (the tutorial clip is already at its minimum size). Common phones
-  (390×844 and up) fit; 360×780 doesn't scroll. Fine for now.
+  personal note was added (the tutorial clip is already at its minimum size). Since the 9a
+  redesign (bigger mascot header and buttons) 390×844 scrolls a little too, so "I'm Sergio's
+  wife" sits just below the fold. She's normally logged in already; tighten if it bothers anyone.
 - **Staging environment on AWS:** not now (one real user, point-in-time recovery covers
   mistakes). Revisit if a broken deploy would really hurt.
 - Test warning: Starlette suggests `httpx2` for its TestClient. Harmless; update when convenient.
