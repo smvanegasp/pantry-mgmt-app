@@ -1,4 +1,4 @@
-# Email alerts: the API failing, and anyone getting the owner passcode wrong.
+# Email alerts: the API failing, anyone getting the owner passcode wrong, and visitor feedback.
 # Free at this size (CloudWatch's first 10 alarms and metrics, SNS's first 1,000 emails).
 
 variable "alert_email" {
@@ -18,10 +18,11 @@ resource "aws_sns_topic_subscription" "alerts_email" {
 }
 
 locals {
-  # Logged by the API (backend/app/routers/session.py, routers/recognition.py).
+  # Logged by the API (backend/app/routers/session.py, routers/recognition.py, routers/feedback.py).
   log_signals = {
     WrongOwnerPasscode = "\"Wrong owner passcode\""
     PhotoReadingFailed = "\"Photo reading failed\""
+    GuestFeedback      = "\"Guest feedback received\""
   }
 }
 
@@ -97,4 +98,21 @@ resource "aws_cloudwatch_metric_alarm" "lambda_errors" {
   comparison_operator = "GreaterThanOrEqualToThreshold"
   treat_missing_data  = "notBreaching"
   alarm_actions       = [aws_sns_topic.alerts.arn]
+}
+
+# Visitors' feedback never shows in her Settings inbox, so Sergio hears about it by email (at most
+# one per 15 minutes) and reads it with scripts/feedback.py.
+resource "aws_cloudwatch_metric_alarm" "guest_feedback" {
+  alarm_name          = "${local.name}-guest-feedback"
+  alarm_description   = "A demo visitor left feedback in the app (Settings). Read it with scripts/feedback.py."
+  namespace           = "Pantry"
+  metric_name         = "GuestFeedback"
+  statistic           = "Sum"
+  period              = 900
+  evaluation_periods  = 1
+  threshold           = 1
+  comparison_operator = "GreaterThanOrEqualToThreshold"
+  treat_missing_data  = "notBreaching"
+  alarm_actions       = [aws_sns_topic.alerts.arn]
+  depends_on          = [aws_cloudwatch_log_metric_filter.signals]
 }

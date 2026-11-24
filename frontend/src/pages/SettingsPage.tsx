@@ -3,6 +3,7 @@ import { useState, type FormEvent } from "react";
 
 import type { Category } from "../api";
 import { CountStepper } from "../components/CountStepper";
+import { FeedbackSettings } from "../components/FeedbackSettings";
 import { useTheme, type Theme } from "../lib/theme";
 import { LevelPicker } from "../components/LevelPicker";
 import {
@@ -118,6 +119,7 @@ export function SettingsPage() {
       <ThresholdSettings />
       <CategorySettings />
       <AppearanceSettings />
+      <FeedbackSettings />
       <AccountSettings />
     </div>
   );

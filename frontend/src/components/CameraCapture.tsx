@@ -115,7 +115,7 @@ export function CameraCapture({ shots, onShot, onRemove }: Props) {
       </div>
 
       {shots.length > 0 && (
-        <ul className="mt-3 flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none]" aria-label="Photos taken">
+        <ul className="mt-3 flex gap-2 overflow-x-auto overscroll-x-none pb-1 [scrollbar-width:none]" aria-label="Photos taken">
           {shots.map((s) => (
             <li key={s.id} className="shrink-0">
               <button

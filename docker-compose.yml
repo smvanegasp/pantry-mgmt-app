@@ -44,6 +44,9 @@ services:
       COM_ADOBE_TESTING_S3MOCK_STORE_ROOT: /data
     volumes:
       - s3_data:/data
+    # Reachable from the laptop for scripts/feedback.py --local.
+    ports:
+      - "9090:9090"
 
   dynamodb:
     image: amazon/dynamodb-local:latest

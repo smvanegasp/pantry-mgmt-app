@@ -66,6 +66,9 @@
 
 html {
   -webkit-tap-highlight-color: transparent;
+  /* No rubber band past the top or bottom of the app (Sergio, 2026-11-24: it felt less premium).
+     Sheets and lists inside keep their own scrolling, also without bouncing. From the fit app. */
+  overscroll-behavior: none;
 }
 
 /* iPhones zoom the page when a field with text under 16px gets focus. */
@@ -78,6 +81,7 @@ html {
 }
 
 body {
+  overscroll-behavior: none;
   @apply bg-stone-50 text-stone-900 antialiased;
   font-family: var(--font-sans);
 }

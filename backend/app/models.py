@@ -137,3 +137,34 @@ class ListEntry(BaseModel):
     checked: bool = False
     addedBy: Literal["auto", "manual"]
     createdAt: str
+
+
+class FeedbackCreate(BaseModel):
+    text: str = Field(min_length=1, max_length=2000)
+    # Which screen it's about ("Pantry", "List", ...), preselected from the last tab.
+    page: str = Field("", max_length=80)
+    # Screenshots: keys of photos uploaded from this session.
+    photos: list[str] = Field(default_factory=list, max_length=3)
+
+
+class Feedback(BaseModel):
+    """Feedback left in the app. Owner notes show in her Settings inbox; visitors' notes only
+    reach Sergio (email + scripts/feedback.py), never her inbox."""
+
+    id: str
+    text: str
+    page: str = ""
+    role: Literal["owner", "guest"]
+    createdAt: str
+    status: Literal["new", "done"] = "new"
+    userAgent: str = ""
+    # Copies under feedback/ (they outlive a demo's photos), readable by the owner.
+    photos: list[str] = Field(default_factory=list)
+    editedAt: str | None = None
+    # Who wrote it (their data space), so they can fix a typo; never sent back.
+    space: str = Field("", exclude=True)
+
+
+class FeedbackUpdate(BaseModel):
+    status: Literal["new", "done"] | None = None
+    text: str | None = Field(None, min_length=1, max_length=2000)

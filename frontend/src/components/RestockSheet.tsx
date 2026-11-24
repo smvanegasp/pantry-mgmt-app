@@ -1,9 +1,10 @@
 import { ArrowCounterClockwise, CheckCircle, Prohibit } from "@phosphor-icons/react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import type { Category, Item, ListEntry, Mode } from "../api";
 import { useDeleteListEntry, useRestock, useUpdateListEntry } from "../hooks";
 import { stockNote } from "../lib/packages";
+import { rememberPlace } from "../lib/place";
 import { BottomSheet } from "./BottomSheet";
 import { CountStepper } from "./CountStepper";
 import { ExpiryPicker } from "./ExpiryPicker";
@@ -36,6 +37,7 @@ const DONE_LABEL: Partial<Record<Status, string>> = {
 
 export function RestockSheet({ entries, itemsById, categories, onClose }: Props) {
   const restock = useRestock();
+  useEffect(() => rememberPlace("I'm home"), []);
   const update = useUpdateListEntry();
   const remove = useDeleteListEntry();
   const [drafts, setDrafts] = useState<Record<string, Draft>>(() =>

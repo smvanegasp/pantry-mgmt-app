@@ -4,9 +4,11 @@ import { createPortal } from "react-dom";
 
 import { api, photoUrl } from "../api";
 import { PHOTO_SIDE, resizeImage, THUMB_SIDE } from "../lib/images";
+import { useScrollLock } from "../lib/scrollLock";
 
 /** Full-screen view of an item's photo; tap anywhere or press Escape to close. */
 export function PhotoViewer({ photoKey, alt, onClose }: { photoKey: string; alt: string; onClose: () => void }) {
+  useScrollLock();
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
     document.addEventListener("keydown", onKey);

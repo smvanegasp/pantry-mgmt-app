@@ -80,7 +80,7 @@ export function TutorialStrip({ tutorials }: { tutorials: Tutorial[] }) {
       <ul
         ref={strip}
         aria-label="How it works"
-        className="-mx-6 flex snap-x snap-mandatory gap-2 overflow-x-auto px-[calc(50%-8rem)] pb-2 [scrollbar-width:none] md:mx-0 md:grid md:snap-none md:grid-cols-3 md:gap-x-6 md:gap-y-8 md:overflow-visible md:px-0 lg:grid-cols-5"
+        className="-mx-6 flex snap-x snap-mandatory gap-2 overflow-x-auto overscroll-x-none px-[calc(50%-8rem)] pb-2 [scrollbar-width:none] md:mx-0 md:grid md:snap-none md:grid-cols-3 md:gap-x-6 md:gap-y-8 md:overflow-visible md:px-0 lg:grid-cols-5"
       >
         {tutorials.map((t, i) => (
           <Clip key={t.id} tutorial={t} index={i} onVisible={setActive} />

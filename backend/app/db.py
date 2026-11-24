@@ -127,3 +127,8 @@ def increment(key: str, ttl_seconds: int) -> int:
         ReturnValues="UPDATED_NEW",
     )
     return int(response["Attributes"]["n"])
+
+
+def keys(space: str, sk_prefix: str) -> list[tuple[str, dict[str, Any]]]:
+    """(sk, data) for every row under a prefix; like query() but keeps the sort key."""
+    return [(r["sk"], _from_dynamo(r)) for r in _query_raw(space, sk_prefix)]

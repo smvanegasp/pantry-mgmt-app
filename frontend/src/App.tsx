@@ -6,6 +6,7 @@ import { DemoBanner } from "./components/DemoBanner";
 import { DesktopQr } from "./components/DesktopQr";
 import { Mascot } from "./components/Mascot";
 import { useList, useRefreshSession, useSession } from "./hooks";
+import { rememberPlace } from "./lib/place";
 import { usePersistentState } from "./lib/usePersistentState";
 import { ListPage } from "./pages/ListPage";
 import { PantryPage } from "./pages/PantryPage";
@@ -70,6 +71,8 @@ function MainApp() {
   const toBuy = (list.data ?? []).filter((e) => !e.checked).length;
   const current = TABS.find((t) => t.id === tab)!;
   const Page = PAGES[tab];
+  // Feedback written in Settings is about the last other tab by default.
+  useEffect(() => rememberPlace(current.label), [current.label]);
 
   const badge = (t: Tab, cls: string) =>
     t === "list" && toBuy > 0 ? (

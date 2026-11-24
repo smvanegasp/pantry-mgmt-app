@@ -6,18 +6,23 @@ ships, and add new requests here as they come up. Each stage ends at the usual g
 Playwright check at 390×844 in a **sample** demo (light and dark), Sergio's phone test through
 ngrok, then a PR. Merging deploys.
 
-## Now: stage 9a, the "kawaii" redesign (in review)
+## Now: stage 9b, in-app feedback + scrolling (in review)
 
-Sergio had Lovable redesign the frontend and wants it live. Visual only: sakura pink / matcha /
-cream theme (stone and emerald re-tinted in `index.css`, new `matcha` scale), Nunito font, the
-onigiri mascot (`components/Mascot.tsx`: loading, empty states, petal shower when the cart is
-done), jar-fill level picker with faces, floating pill tab bar on phones, a real desktop layout
-from 768px (collapsible sidebar, card grid, page titles), the QR button no longer pops up,
-night-blue dark mode, new icons and favicon, clips re-recorded. Lovable's own scaffolding
-(TanStack Start, shadcn, its fake API) was not ported. Gate: Sergio's phone test, then PR.
-After it ships, her home-screen icon may keep the old basket until she re-adds it.
+Both ported from the fit app (`C:\Users\smvan\repos\fit-mgmt-app`), where they worked well.
 
-Then: waiting for her feedback; next stages come from it.
+- **Feedback in Settings:** send a note about a screen (preselected from the last tab) with up
+  to 3 screenshots; fix its text after sending. Her inbox (owner account) shows New / Done, a
+  few at a time, each with Edit and Done / Not done. **Decided (Sergio, 2026-11-24):** the
+  inbox shows only notes from their own account; visitors' notes go to Sergio only (email via
+  the new `guest-feedback` alarm, and `scripts/feedback.py`), so she never sees strangers' text.
+- **Scrolling:** no rubber band past the app's edges (`overscroll-behavior: none`), sheet
+  content and swipe strips don't bounce, and the page behind a sheet/viewer/stock-up stays put
+  (`lib/scrollLock.ts`, iOS-safe), coming back to the same spot.
+- Needs `terraform apply` (2 new resources: log filter + alarm) before merge; plan is clean.
+- Not ported from fit: its sheet-goes-full-screen-while-typing fix (iPhone keyboard). Worth it
+  if the feedback sheet's keyboard covers things on her phone.
+
+Then: waiting for her feedback (now also in-app); next stages come from it.
 
 ## Her feedback
 
@@ -59,6 +64,9 @@ Candidates to weigh against her feedback; none is planned yet.
   version arrives as its own PR, so ask the agent to test it first.
 
 ## Done
+
+- 9a "kawaii" redesign from Lovable: sakura/matcha theme, Nunito, onigiri mascot, desktop
+  sidebar and grids, night-blue dark mode, new icons, clips re-recorded (#34, 2026-11-24).
 
 - Stages 0–8a: see the status table in AGENTS.md §3 (PRs #1–#26). Highlights of the last
   stretch (2026-10-19/20):

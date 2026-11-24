@@ -282,7 +282,10 @@ All in Terraform under [`infra/`](infra/), with state in a versioned S3 bucket c
   pause owner login there for up to an hour, and the login button disappears; 10 wrong tries
   per hour overall pause it everywhere. Every wrong try emails the owner.
 - **Alerts** (`infra/monitoring.tf`): email through SNS when the API errors or crashes, photo
-  reading keeps failing, or someone enters a wrong passcode.
+  reading keeps failing, someone enters a wrong passcode, or a demo visitor leaves feedback.
+- **Feedback** (Settings): anyone can send a note with screenshots. The owner's inbox lists only
+  the owner account's notes; visitors' notes stay private to the developer (email + a script).
+  Screenshots are copied out of the demo and readable by the owner only.
 - **API docs** (`/api/docs`) exist only locally.
 - **Rate limits** use DynamoDB counters, so they hold across Lambda instances:
   - demos: 20 per hour per IP, 500 per hour overall

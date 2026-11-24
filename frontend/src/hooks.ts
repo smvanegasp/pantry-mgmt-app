@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import {
   api,
+  type Feedback,
   type Item,
   type ItemInput,
   type ListEntry,
@@ -188,5 +189,37 @@ export function useDeleteCategory() {
       qc.invalidateQueries({ queryKey: CATEGORIES });
       qc.invalidateQueries({ queryKey: ITEMS });
     },
+  });
+}
+
+const FEEDBACK = ["feedback"];
+
+export function useSendFeedback() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (v: { text: string; page: string; photos?: string[] }) => api.sendFeedback(v.text, v.page, v.photos),
+    onSuccess: () => qc.invalidateQueries({ queryKey: FEEDBACK }),
+  });
+}
+
+/** Fix the text of feedback already sent (whoever wrote it). */
+export function useEditFeedback() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (v: { id: string; text: string }) => api.editFeedback(v.id, v.text),
+    onSuccess: () => qc.invalidateQueries({ queryKey: FEEDBACK }),
+  });
+}
+
+/** The owner's inbox (guests get 403, so only ask as the owner). */
+export function useFeedback(enabled: boolean) {
+  return useQuery({ queryKey: FEEDBACK, queryFn: api.listFeedback, enabled });
+}
+
+export function useMarkFeedback() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (v: { id: string; status: Feedback["status"] }) => api.markFeedback(v.id, v.status),
+    onSuccess: () => qc.invalidateQueries({ queryKey: FEEDBACK }),
   });
 }

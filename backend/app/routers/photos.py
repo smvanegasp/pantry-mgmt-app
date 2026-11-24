@@ -50,6 +50,9 @@ def owns(space: str, photo_key: str) -> bool:
 
 
 def can_read(space: str, photo_key: str) -> bool:
+    # Feedback screenshots are for the owner's Settings inbox only.
+    if photo_key.startswith("feedback/"):
+        return space == OWNER_SPACE
     # Demos are copies of the owner's pantry, so they show the owner's photos too; the sample
     # pantry's photos are shared by everyone (and owned by no space, so never deleted).
     return (

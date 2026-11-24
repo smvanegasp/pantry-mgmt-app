@@ -56,7 +56,7 @@ export function PackageCarousel({ packages, renderPackage, onRemove, focusId, la
         ref={strip}
         onScroll={onScroll}
         aria-label={`${label}s`}
-        className="-mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-1 [scrollbar-width:none]"
+        className="-mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto overscroll-x-none px-4 pb-1 [scrollbar-width:none]"
       >
         {packages.map((pkg, i) => (
           <li
