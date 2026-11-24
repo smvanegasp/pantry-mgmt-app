@@ -6,23 +6,20 @@ ships, and add new requests here as they come up. Each stage ends at the usual g
 Playwright check at 390×844 in a **sample** demo (light and dark), Sergio's phone test through
 ngrok, then a PR. Merging deploys.
 
-## Now: stage 9b, in-app feedback + scrolling (in review)
+## Now: stage 9c, link to sergiovanegas.com + light by default (PR #36)
 
-Both ported from the fit app (`C:\Users\smvan\repos\fit-mgmt-app`), where they worked well.
+- **Link back** to <https://sergiovanegas.com/projects/> in a new tab (as in the fit app,
+  `lib/site.ts`): "More of my projects" at the end of the welcome note, and "Site" in the demo
+  banner. Not in the welcome page's top corner: on computers the QR button sits there.
+- **Light theme by default** (Sergio, 2026-11-24), even when the phone is in dark mode.
+  Automatic and Dark stay in Settings. The setting moved to a new key (`pantry.appearance`)
+  because the old one saved "Automatic" whenever Settings was opened; only an explicit Dark
+  carries over, so her phone opens light unless she had picked Dark. The browser bar colors
+  now match the theme (cream / night-blue).
 
-- **Feedback in Settings:** send a note about a screen (preselected from the last tab) with up
-  to 3 screenshots; fix its text after sending. Her inbox (owner account) shows New / Done, a
-  few at a time, each with Edit and Done / Not done. **Decided (Sergio, 2026-11-24):** the
-  inbox shows only notes from their own account; visitors' notes go to Sergio only (email via
-  the new `guest-feedback` alarm, and `scripts/feedback.py`), so she never sees strangers' text.
-- **Scrolling:** no rubber band past the app's edges (`overscroll-behavior: none`), sheet
-  content and swipe strips don't bounce, and the page behind a sheet/viewer/stock-up stays put
-  (`lib/scrollLock.ts`, iOS-safe), coming back to the same spot.
-- `terraform apply` done 2026-11-24 (2 new resources: log filter + alarm). PR #35.
-- Not ported from fit: its sheet-goes-full-screen-while-typing fix (iPhone keyboard). Worth it
-  if the feedback sheet's keyboard covers things on her phone.
-
-Then: waiting for her feedback (now also in-app); next stages come from it.
+Then: waiting for her feedback (now also in-app); next stages come from it. Still possible
+from the fit app: the sheet that goes full screen while the iPhone keyboard is open, if the
+feedback sheet's keyboard covers things on her phone.
 
 ## Her feedback
 
@@ -64,6 +61,11 @@ Candidates to weigh against her feedback; none is planned yet.
   version arrives as its own PR, so ask the agent to test it first.
 
 ## Done
+
+- 9b in-app feedback in Settings (send with screenshots; her inbox with edit and done / not
+  done; visitors' notes only to Sergio by email + `scripts/feedback.py`) and no rubber-band
+  scrolling, page pinned behind sheets; both from the fit app (#35, 2026-11-24). First
+  Dependabot round after it: #32, #33, #28 merged.
 
 - 9a "kawaii" redesign from Lovable: sakura/matcha theme, Nunito, onigiri mascot, desktop
   sidebar and grids, night-blue dark mode, new icons, clips re-recorded (#34, 2026-11-24).

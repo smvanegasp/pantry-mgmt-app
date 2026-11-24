@@ -1,7 +1,8 @@
-import { ArrowCounterClockwise, Flask, SignIn } from "@phosphor-icons/react";
+import { ArrowCounterClockwise, ArrowUpRight, Flask, SignIn } from "@phosphor-icons/react";
 import { useState } from "react";
 
 import { useResetGuest } from "../hooks";
+import { SITE_URL } from "../lib/site";
 import { InfoTip } from "./InfoTip";
 import { PasscodeSheet } from "./PasscodeSheet";
 
@@ -36,15 +37,26 @@ export function DemoBanner({ expiresAt, ownerLoginEnabled }: { expiresAt: number
         type="button"
         onClick={confirmReset}
         disabled={reset.isPending}
-        className="inline-flex items-center gap-1 rounded-lg px-2 py-1 font-medium text-sky-800 active:bg-sky-100"
+        className="inline-flex shrink-0 items-center gap-1 rounded-lg px-1.5 py-1 font-medium text-sky-800 active:bg-sky-100"
       >
         <ArrowCounterClockwise size={14} weight="bold" aria-hidden /> Reset
       </button>
+      {/* Back to Sergio's projects page, in a new tab (as in the fit app). */}
+      <a
+        href={SITE_URL}
+        target="_blank"
+        rel="noopener noreferrer"
+        title="sergiovanegas.com/projects"
+        aria-label="sergiovanegas.com projects (opens in a new tab)"
+        className="inline-flex shrink-0 items-center gap-0.5 rounded-lg px-1.5 py-1 font-medium text-sky-800 active:bg-sky-100"
+      >
+        Site <ArrowUpRight size={12} weight="bold" aria-hidden />
+      </a>
       {ownerLoginEnabled && (
         <button
           type="button"
           onClick={() => setLoggingIn(true)}
-          className="inline-flex items-center gap-1 rounded-lg px-2 py-1 font-medium text-sky-800 active:bg-sky-100"
+          className="inline-flex shrink-0 items-center gap-1 rounded-lg px-1.5 py-1 font-medium text-sky-800 active:bg-sky-100"
         >
           <SignIn size={14} weight="bold" aria-hidden /> Log in
         </button>

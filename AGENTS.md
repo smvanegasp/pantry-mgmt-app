@@ -80,10 +80,10 @@ taps when you get home. Photos of products are read by an AI model to fill items
 | 8a | Amounts (¼ ½ ¾ Full, or how many) per photo in "Stock your pantry"; real product photos on the sample pantry; clips re-recorded | #26 |
 | 9a | "Kawaii" redesign from Lovable: sakura/matcha theme, Nunito, onigiri mascot, desktop sidebar and grids, night-blue dark mode, new icons, clips re-recorded | #34 |
 | 9b | In-app feedback (Settings: send with screenshots, her inbox with edit and done / not done; visitors' notes go only to Sergio by email + `scripts/feedback.py`); no rubber-band scrolling, page pinned behind sheets (both from the fit app) | #35 |
+| 9c | Link back to sergiovanegas.com/projects (welcome note, demo banner; new tab); light theme by default | #36 |
 
 **Live at <https://pantry.sergiovanegas.com>** (also <https://d3bg4vze5d4ttm.cloudfront.net>).
-Everything through 9a is merged and deployed; 9b is on branch `stage-9b-feedback-scroll` in
-review as #35 (2026-11-24); its `terraform apply` (guest-feedback alarm) is done. Local (Docker + ngrok) is the place to test changes before they're merged; she
+Everything through 9b is merged and deployed (2026-11-24); 9c is in review as #36. Local (Docker + ngrok) is the place to test changes before they're merged; she
 only uses the live site.
 
 ## 4. Architecture
@@ -256,9 +256,11 @@ cd frontend && npm run record-tutorials   # re-record welcome clips (stack runni
   "full / plenty". So `bg-emerald-600` renders pink. `--font-sans` is Nunito (Google Fonts link
   in `index.html`); also `animate-float`, `animate-pop`, `animate-petal`, squishy buttons, and
   `prefers-reduced-motion` turns animations off.
-- **Dark mode** mirrors those scales onto night-blue in `:root.dark` (50 <-> 950, ...). It
-  applies before first paint (inline script in `index.html`), and `lib/theme.ts` follows the
-  phone on "Automatic". New UI built with the usual stone/emerald/matcha/amber/sky/red classes
+- **Dark mode** mirrors those scales onto night-blue in `:root.dark` (50 <-> 950, ...). **Light
+  is the default** (9c); the choice is saved as `pantry.appearance` (the old `pantry.theme` key
+  only carries over an explicit Dark). It applies before first paint (inline script in
+  `index.html`, keep it in sync with `lib/theme.ts`), and `lib/theme.ts` follows the phone on
+  "Automatic". New UI built with the usual stone/emerald/matcha/amber/sky/red classes
   gets dark mode for free; check new screens in both.
 - **Layout:** phones (under 768px, `md`) get the floating pill tab bar; from `md` up there's a
   sidebar (collapsible, remembered as `pantry.sidebar`; width in the CSS var `--sidebar`), page
@@ -369,7 +371,7 @@ depends on it; the workflow never applies Terraform. Because both paths deploy t
 
 | Feature | Frontend | Backend |
 |---|---|---|
-| Welcome page, personal note (Sergio's photo `public/sergio.jpg`), clips, demo/owner buttons | `pages/WelcomePage.tsx`, `components/TutorialStrip.tsx` | `routers/session.py`, `sandbox.py` |
+| Welcome page, personal note (Sergio's photo `public/sergio.jpg`) with the link to sergiovanegas.com/projects (`lib/site.ts`), clips, demo/owner buttons | `pages/WelcomePage.tsx`, `components/TutorialStrip.tsx` | `routers/session.py`, `sandbox.py` |
 | Desktop shell (sidebar, titles) and phone pill tab bar | `App.tsx` | |
 | Mascot, empty states, petal shower | `components/Mascot.tsx`, `public/mascots/` | |
 | Desktop "Open on your phone" QR button (no longer pops up) | `components/DesktopQr.tsx`, `QrCode.tsx`, `lib/useMediaQuery.ts` | |

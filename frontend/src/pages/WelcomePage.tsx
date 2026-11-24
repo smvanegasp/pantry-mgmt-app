@@ -1,10 +1,11 @@
-import { Flower } from "@phosphor-icons/react";
+import { ArrowUpRight, Flower } from "@phosphor-icons/react";
 import { useState } from "react";
 
 import { Mascot } from "../components/Mascot";
 import { PasscodeSheet } from "../components/PasscodeSheet";
 import { TutorialStrip, type Tutorial } from "../components/TutorialStrip";
 import { useSession, useStartGuest } from "../hooks";
+import { SITE_URL } from "../lib/site";
 
 const TUTORIALS: Tutorial[] = [
   {
@@ -65,7 +66,17 @@ export function WelcomePage() {
           />
           <p className="text-sm text-stone-700 md:text-base">
             <b>Hi, I'm Sergio!</b> I built this for my wife and me, so the good food we bring home
-            from Costco gets eaten, not thrown away. A little tech, a lot less waste.
+            from Costco gets eaten, not thrown away. A little tech, a lot less waste.{" "}
+            {/* Back to Sergio's projects page, where visitors come from: a new tab. */}
+            <a
+              href={SITE_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="More of my projects at sergiovanegas.com (opens in a new tab)"
+              className="inline-flex items-center gap-0.5 font-bold whitespace-nowrap text-emerald-700 underline decoration-emerald-300 underline-offset-2"
+            >
+              More of my projects <ArrowUpRight size={12} weight="bold" aria-hidden />
+            </a>
           </p>
         </div>
 
