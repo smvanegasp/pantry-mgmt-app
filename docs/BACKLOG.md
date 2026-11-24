@@ -6,7 +6,7 @@ ships, and add new requests here as they come up. Each stage ends at the usual g
 Playwright check at 390×844 in a **sample** demo (light and dark), Sergio's phone test through
 ngrok, then a PR. Merging deploys.
 
-## Now: stage 9c, link to sergiovanegas.com + light by default (in review)
+## Now: stage 9c, link to sergiovanegas.com + light by default (PR #36)
 
 - **Link back** to <https://sergiovanegas.com/projects/> in a new tab (as in the fit app,
   `lib/site.ts`): "More of my projects" at the end of the welcome note, and "Site" in the demo

@@ -80,11 +80,10 @@ taps when you get home. Photos of products are read by an AI model to fill items
 | 8a | Amounts (¼ ½ ¾ Full, or how many) per photo in "Stock your pantry"; real product photos on the sample pantry; clips re-recorded | #26 |
 | 9a | "Kawaii" redesign from Lovable: sakura/matcha theme, Nunito, onigiri mascot, desktop sidebar and grids, night-blue dark mode, new icons, clips re-recorded | #34 |
 | 9b | In-app feedback (Settings: send with screenshots, her inbox with edit and done / not done; visitors' notes go only to Sergio by email + `scripts/feedback.py`); no rubber-band scrolling, page pinned behind sheets (both from the fit app) | #35 |
-| 9c | Link back to sergiovanegas.com/projects (welcome note, demo banner; new tab); light theme by default | (in review) |
+| 9c | Link back to sergiovanegas.com/projects (welcome note, demo banner; new tab); light theme by default | #36 |
 
 **Live at <https://pantry.sergiovanegas.com>** (also <https://d3bg4vze5d4ttm.cloudfront.net>).
-Everything through 9b is merged and deployed (2026-11-24); 9c is on branch `stage-9c-site-link`
-waiting for Sergio's phone test. Local (Docker + ngrok) is the place to test changes before they're merged; she
+Everything through 9b is merged and deployed (2026-11-24); 9c is in review as #36. Local (Docker + ngrok) is the place to test changes before they're merged; she
 only uses the live site.
 
 ## 4. Architecture
