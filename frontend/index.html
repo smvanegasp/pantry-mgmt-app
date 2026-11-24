@@ -15,11 +15,16 @@
     <link rel="manifest" href="/manifest.json" />
     <meta name="apple-mobile-web-app-title" content="Pantry" />
     <script>
-      // Apply dark mode before the first paint (no white flash). Same logic as src/lib/theme.ts.
+      // Apply dark mode before the first paint (no white flash). Same logic as src/lib/theme.ts:
+      // light by default; only an explicit Dark from the old key carries over.
       try {
-        var t = localStorage.getItem("pantry.theme");
-        if (t === "dark" || (t !== "light" && matchMedia("(prefers-color-scheme: dark)").matches)) {
+        var t = localStorage.getItem("pantry.appearance");
+        if (t !== "system" && t !== "light" && t !== "dark") {
+          t = localStorage.getItem("pantry.theme") === "dark" ? "dark" : "light";
+        }
+        if (t === "dark" || (t === "system" && matchMedia("(prefers-color-scheme: dark)").matches)) {
           document.documentElement.classList.add("dark");
+          document.querySelector('meta[name="theme-color"]').setAttribute("content", "#14162a");
         }
       } catch (e) {}
     </script>
