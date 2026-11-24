@@ -47,7 +47,10 @@ taps when you get home. Photos of products are read by an AI model to fill items
   right away, bigger ideas go in the backlog.
 - **UI style:** no emojis anywhere. Use Phosphor icons (`@phosphor-icons/react`,
   `weight="fill"`) with purpose and solid colors. Add an `InfoTip` (i) popover wherever a
-  feature isn't obvious. Black/charcoal dark mode (not warm brown).
+  feature isn't obvious. Since 9a the look is "kawaii": sakura pink actions, matcha green for
+  full/plenty, cream background, Nunito font, the onigiri mascot (`components/Mascot.tsx`) for
+  loading and empty states, and a night-blue dark mode (Sergio chose it; it replaced the
+  black/charcoal one). Keep new screens in that style.
 - **Python:** managed with **uv** (`uv sync`, `uv run pytest`, `uv add`). **Node.js 22+** on the
   laptop (Vite 8 needs it; `frontend/package.json` engines); CI and the web container use 22.
 - **Dependabot:** minor/patch updates come grouped (merge when CI is green); major versions come
@@ -75,10 +78,11 @@ taps when you get home. Photos of products are read by an AI model to fill items
 | 7d | Hardening: 6-digit passcode with 3-try pause that hides the login button, email alerts, no API docs on AWS, ngrok password, Dependabot | #18 |
 | 7e | Custom domain pantry.sergiovanegas.com (ACM + CloudFront alias, DNS at Hostinger) | #23 |
 | 8a | Amounts (¼ ½ ¾ Full, or how many) per photo in "Stock your pantry"; real product photos on the sample pantry; clips re-recorded | #26 |
+| 9a | "Kawaii" redesign from Lovable: sakura/matcha theme, Nunito, onigiri mascot, desktop sidebar and grids, night-blue dark mode, new icons, clips re-recorded | #34 |
 
 **Live at <https://pantry.sergiovanegas.com>** (also <https://d3bg4vze5d4ttm.cloudfront.net>).
-Everything above is merged and deployed; there are no open PRs and no work in progress
-(2026-10-20). Local (Docker + ngrok) is the place to test changes before they're merged; she
+Everything through 8a is merged and deployed; 9a (redesign) is on branch `stage-9a-redesign`
+in review (2026-11-24); merging deploys it. Local (Docker + ngrok) is the place to test changes before they're merged; she
 only uses the live site.
 
 ## 4. Architecture
@@ -243,11 +247,19 @@ cd frontend && npm run record-tutorials   # re-record welcome clips (stack runni
 - **Mobile first**, 390×844 is the reference viewport. On touch screens all inputs use 16px
   text (unlayered CSS in `index.css`) so iOS doesn't auto-zoom. Don't autofocus fields in
   sheets that open the camera (the keyboard popped up after returning from it).
-- **Dark mode** mirrors the Tailwind palette with CSS variables in `index.css` (generated from
-  `node_modules/tailwindcss/theme.css`; grays from `neutral`; `white` → neutral-800 surfaces;
-  stone-200 borders → neutral-700). It applies before first paint (inline script in
-  `index.html`), and `lib/theme.ts` follows the phone on "Automatic". New UI built with the
-  usual stone/emerald/amber/sky/red classes gets dark mode for free; check new screens in both.
+- **Theme** (`index.css`, from the Lovable redesign): the code keeps Tailwind's stone/emerald
+  class names, but `:root` re-tints them: `stone` = warm cocoa text on cream, `emerald` =
+  sakura pink (the main action color), plus a new `matcha` scale (100/200/500/600/800) for
+  "full / plenty". So `bg-emerald-600` renders pink. `--font-sans` is Nunito (Google Fonts link
+  in `index.html`); also `animate-float`, `animate-pop`, `animate-petal`, squishy buttons, and
+  `prefers-reduced-motion` turns animations off.
+- **Dark mode** mirrors those scales onto night-blue in `:root.dark` (50 <-> 950, ...). It
+  applies before first paint (inline script in `index.html`), and `lib/theme.ts` follows the
+  phone on "Automatic". New UI built with the usual stone/emerald/matcha/amber/sky/red classes
+  gets dark mode for free; check new screens in both.
+- **Layout:** phones (under 768px, `md`) get the floating pill tab bar; from `md` up there's a
+  sidebar (collapsible, remembered as `pantry.sidebar`; width in the CSS var `--sidebar`), page
+  titles and multi-column card grids. Fixed bottom buttons sit above the pill bar (5.25–5.5rem).
 - Bottom sheets and viewers render through portals. InfoTip positions itself against the
   viewport. Filters, sort and folded sections are remembered in localStorage.
 - Sorts: By category / Expires soonest / Lowest stock / Recently updated each show foldable
@@ -341,7 +353,9 @@ depends on it; the workflow never applies Terraform. Because both paths deploy t
 | Feature | Frontend | Backend |
 |---|---|---|
 | Welcome page, personal note (Sergio's photo `public/sergio.jpg`), clips, demo/owner buttons | `pages/WelcomePage.tsx`, `components/TutorialStrip.tsx` | `routers/session.py`, `sandbox.py` |
-| Desktop "Made for your phone" QR popup | `components/DesktopQr.tsx`, `QrCode.tsx`, `lib/useMediaQuery.ts` | |
+| Desktop shell (sidebar, titles) and phone pill tab bar | `App.tsx` | |
+| Mascot, empty states, petal shower | `components/Mascot.tsx`, `public/mascots/` | |
+| Desktop "Open on your phone" QR button (no longer pops up) | `components/DesktopQr.tsx`, `QrCode.tsx`, `lib/useMediaQuery.ts` | |
 | Owner login, 6 digits, tries left, pause after 3 | `components/PasscodeSheet.tsx`, `DemoBanner.tsx` | `routers/session.py`, `passcode.py`, `ratelimit.py` |
 | Pantry list: filters, search icon, sorts and sections (Low / Normal / Plenty) | `pages/PantryPage.tsx`, `components/PantryControls.tsx`, `lib/items.ts`, `lib/search.ts` | `routers/items.py`, `stock.py` |
 | Item card quick taps (level chips, count stepper), photo thumbnail | `components/ItemCard.tsx`, `LevelPicker.tsx`, `CountStepper.tsx`, `lib/packages.ts` | `stock.py` |

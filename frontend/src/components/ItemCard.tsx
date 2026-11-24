@@ -36,12 +36,12 @@ export function ItemCard({ item, settings, onList, onEdit }: Props) {
   const active = activePackage(item);
 
   return (
-    <li className="rounded-xl border border-stone-200 bg-white p-3 shadow-sm">
+    <li className="flex flex-col justify-between rounded-2xl border border-stone-200/70 bg-white p-3.5 shadow-sm transition-transform hover:-translate-y-0.5">
       <div className="flex items-start gap-3">
         {item.photoKey && <ItemThumb photoKey={item.photoKey} alt={item.name} />}
         <div className="min-w-0 flex-1">
           <button type="button" onClick={onEdit} className="flex w-full items-start gap-2 text-left">
-            <span className="flex-1 text-base font-semibold text-stone-900">{item.name}</span>
+            <span className="flex-1 text-base font-bold text-stone-900">{item.name}</span>
             {onList && (
               <span className="inline-flex items-center gap-1 rounded-full bg-sky-100 px-2 py-0.5 text-xs font-medium text-sky-800">
                 <ShoppingCart size={12} weight="fill" aria-hidden /> On list

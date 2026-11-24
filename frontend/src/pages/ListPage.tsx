@@ -1,9 +1,10 @@
-import { CaretDown, CaretRight, Check, House, ShoppingCart, Sparkle, X } from "@phosphor-icons/react";
+import { CaretDown, CaretRight, Check, House, Sparkle, X } from "@phosphor-icons/react";
 import { useState } from "react";
 
 import type { Item, ListEntry } from "../api";
 import { AddToList } from "../components/AddToList";
 import { InfoTip } from "../components/InfoTip";
+import { EmptyState, Mascot, PetalShower } from "../components/Mascot";
 import { ItemThumb } from "../components/Photo";
 import { RestockSheet } from "../components/RestockSheet";
 import {
@@ -25,7 +26,7 @@ function EntryRow({ entry, item }: { entry: ListEntry; item?: Item }) {
   const note = item ? stockNote(item) : null;
 
   return (
-    <li className="flex items-center rounded-xl border border-stone-200 bg-white shadow-sm">
+    <li className="flex items-center rounded-2xl border border-stone-200/70 bg-white shadow-sm">
       <button
         type="button"
         role="checkbox"
@@ -36,7 +37,7 @@ function EntryRow({ entry, item }: { entry: ListEntry; item?: Item }) {
         <span
           aria-hidden
           className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 text-sm font-bold ${
-            entry.checked ? "border-emerald-600 bg-emerald-600 text-white" : "border-stone-300"
+            entry.checked ? "animate-pop border-matcha-500 bg-matcha-500 text-white" : "border-stone-300 border-dashed"
           }`}
         >
           {entry.checked && <Check size={16} weight="bold" />}
@@ -71,6 +72,7 @@ export function ListPage() {
   const generate = useGenerateList();
   const [message, setMessage] = useState<string | null>(null);
   const [showCart, setShowCart] = useState(true);
+  const [putAway, setPutAway] = useState(0);
   // Snapshot of the cart when "I'm home" is tapped, so the sheet keeps its cards as they're handled.
   const [restocking, setRestocking] = useState<ListEntry[] | null>(null);
 
@@ -101,7 +103,7 @@ export function ListPage() {
           type="button"
           onClick={generateList}
           disabled={generate.isPending}
-          className="w-full rounded-xl bg-emerald-600 py-3.5 text-lg font-semibold text-white shadow-sm active:bg-emerald-700 disabled:opacity-60"
+          className="w-full rounded-full bg-emerald-600 py-4 text-lg font-extrabold text-white shadow-lg hover:bg-emerald-500 disabled:opacity-60"
         >
           {generate.isPending ? (
             "Checking pantry…"
@@ -132,25 +134,33 @@ export function ListPage() {
       {list.error && <p className="text-red-600">Couldn't load the list: {list.error.message}</p>}
 
       {list.isSuccess && entries.length === 0 && (
-        <div className="mt-10 text-center text-stone-500">
-          <ShoppingCart size={48} weight="fill" className="mx-auto text-stone-300" aria-hidden />
-          <p className="mt-2 font-medium">Your grocery list is empty</p>
+        <EmptyState title="Your grocery list is empty">
           <p className="text-sm">Generate it from your pantry or add things above.</p>
-        </div>
+        </EmptyState>
       )}
 
       {entries.length > 0 && (
-        <p className="text-sm font-medium text-stone-600">
-          {inCart.length} of {entries.length} in cart
-        </p>
+        <div>
+          <div className="mb-1 flex justify-between text-sm font-bold text-stone-600">
+            <span>{inCart.length} of {entries.length} in cart</span>
+            <span className="text-emerald-600">{Math.round((inCart.length / entries.length) * 100)}%</span>
+          </div>
+          <div className="h-3 overflow-hidden rounded-full bg-stone-100" aria-hidden>
+            <div
+              className="h-full rounded-full bg-gradient-to-r from-emerald-300 to-matcha-500 transition-all duration-500"
+              style={{ width: `${(inCart.length / entries.length) * 100}%` }}
+            />
+          </div>
+        </div>
       )}
 
       {groups.map((group) => (
         <section key={group.key}>
-          <h2 className="mb-2 text-sm font-semibold tracking-wide text-stone-500 uppercase">
+          <h2 className="mb-2 flex items-center gap-1.5 text-sm font-extrabold text-stone-600">
+            <span className="h-2.5 w-2.5 rounded-full bg-emerald-400" aria-hidden />
             {group.name}
           </h2>
-          <ul className="space-y-2">
+          <ul className="grid gap-2 md:grid-cols-2">
             {group.items.map((entry) => (
               <EntryRow
                 key={entry.id}
@@ -163,7 +173,10 @@ export function ListPage() {
       ))}
 
       {entries.length > 0 && toBuy.length === 0 && (
-        <p className="text-center font-medium text-emerald-700">Everything's in the cart</p>
+        <div className="flex animate-pop flex-col items-center text-center">
+          <Mascot size={110} />
+          <p className="font-extrabold text-emerald-700">Everything's in the cart! Yay!</p>
+        </div>
       )}
 
       {inCart.length > 0 && (
@@ -172,7 +185,7 @@ export function ListPage() {
             type="button"
             onClick={() => setShowCart((s) => !s)}
             aria-expanded={showCart}
-            className="mb-2 text-sm font-semibold tracking-wide text-stone-500 uppercase"
+            className="mb-2 text-sm font-extrabold text-stone-500"
           >
             <span className="inline-flex items-center gap-1">
               {showCart ? (
@@ -184,7 +197,7 @@ export function ListPage() {
             </span>
           </button>
           {showCart && (
-            <ul className="space-y-2">
+            <ul className="grid gap-2 md:grid-cols-2">
               {inCart.map((entry) => (
                 <EntryRow key={entry.id} entry={entry} />
               ))}
@@ -194,11 +207,11 @@ export function ListPage() {
       )}
 
       {inCart.length > 0 && (
-        <div className="fixed inset-x-0 bottom-[calc(4rem+env(safe-area-inset-bottom))] z-20 px-4 pb-3">
+        <div className="fixed inset-x-0 bottom-[calc(5.25rem+env(safe-area-inset-bottom))] z-20 px-4 pb-3 md:bottom-4 md:left-(--sidebar)">
           <button
             type="button"
             onClick={() => setRestocking(inCart)}
-            className="mx-auto flex w-full max-w-lg items-center justify-center gap-2 rounded-xl bg-stone-900 py-3.5 text-lg font-semibold text-white shadow-lg active:bg-stone-800"
+            className="mx-auto flex w-full max-w-lg items-center justify-center gap-2 rounded-full bg-stone-900 py-4 text-lg font-extrabold text-white shadow-lg hover:bg-stone-800"
           >
             <House size={22} weight="fill" aria-hidden />
             I'm home · put away {inCart.length}
@@ -211,9 +224,13 @@ export function ListPage() {
           entries={restocking}
           itemsById={itemsById}
           categories={categories.data ?? []}
-          onClose={() => setRestocking(null)}
+          onClose={() => {
+            setRestocking(null);
+            setPutAway((n) => n + 1);
+          }}
         />
       )}
+      <PetalShower trigger={putAway || (entries.length > 0 && toBuy.length === 0 ? entries.length : 0)} />
     </div>
   );
 }

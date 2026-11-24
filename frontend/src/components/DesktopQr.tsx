@@ -1,7 +1,6 @@
 import { DeviceMobile, QrCode as QrIcon } from "@phosphor-icons/react";
 import { useState } from "react";
 
-import { usePersistentState } from "../lib/usePersistentState";
 import { useMediaQuery } from "../lib/useMediaQuery";
 import { BottomSheet } from "./BottomSheet";
 import { QrCode } from "./QrCode";
@@ -10,28 +9,24 @@ import { QrCode } from "./QrCode";
 const DESKTOP = "(min-width: 900px) and (hover: hover) and (pointer: fine)";
 
 /**
- * The app is made for phones (camera, one hand in the store). On a computer, offer a QR code
- * to open it on the phone instead: shown once on arrival, then from a button in the corner.
+ * The camera and the store check-off shine on a phone. On a computer (fully supported too),
+ * a button in the corner offers a QR code to open the app there; it never pops up by itself.
  */
 export function DesktopQr() {
   const desktop = useMediaQuery(DESKTOP);
-  const [seen, setSeen] = usePersistentState("pantry.phoneQr", { closed: false });
-  const [open, setOpen] = useState(!seen.closed);
+  const [open, setOpen] = useState(false);
   if (!desktop) return null;
 
-  // Whatever address is open (the live site, later the custom domain, or an ngrok tunnel).
+  // Whatever address is open (the live site, the custom domain, or an ngrok tunnel).
   const url = `${window.location.origin}/`;
-  const close = () => {
-    setOpen(false);
-    setSeen({ closed: true });
-  };
+  const close = () => setOpen(false);
 
   if (!open) {
     return (
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="fixed top-4 right-4 z-20 inline-flex items-center gap-2 rounded-full border border-stone-200 bg-white px-4 py-2 text-sm font-medium text-stone-700 shadow-sm hover:bg-stone-50"
+        className="fixed top-4 right-4 z-20 inline-flex items-center gap-2 rounded-full border border-stone-200/70 bg-white px-4 py-2 text-sm font-bold text-stone-700 shadow-sm hover:bg-emerald-50"
       >
         <QrIcon size={18} weight="fill" className="text-emerald-600" aria-hidden />
         Open on your phone
@@ -40,11 +35,10 @@ export function DesktopQr() {
   }
 
   return (
-    <BottomSheet title="Made for your phone" onClose={close}>
+    <BottomSheet title="Take it to the store" onClose={close}>
       <div className="text-center">
         <p className="text-stone-700">
-          Pantry is built for your phone, so you can snap products with the camera and check things
-          off in the store. Scan this with your phone's camera to try it there.
+          Snap products with your phone's camera and check things off in the store. Scan this to open Pantry there.
         </p>
         <QrCode text={url} className="mx-auto my-5 h-56 w-56 rounded-xl border border-stone-200" />
         <p className="flex items-center justify-center gap-1.5 text-sm text-stone-500">

@@ -114,7 +114,7 @@ function ThresholdSettings() {
 
 export function SettingsPage() {
   return (
-    <div className="space-y-4 pb-24">
+    <div className="space-y-4 pb-28 lg:grid lg:grid-cols-2 lg:items-start lg:gap-5 lg:space-y-0">
       <ThresholdSettings />
       <CategorySettings />
       <AppearanceSettings />
