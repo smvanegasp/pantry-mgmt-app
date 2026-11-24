@@ -79,11 +79,11 @@ taps when you get home. Photos of products are read by an AI model to fill items
 | 7e | Custom domain pantry.sergiovanegas.com (ACM + CloudFront alias, DNS at Hostinger) | #23 |
 | 8a | Amounts (¼ ½ ¾ Full, or how many) per photo in "Stock your pantry"; real product photos on the sample pantry; clips re-recorded | #26 |
 | 9a | "Kawaii" redesign from Lovable: sakura/matcha theme, Nunito, onigiri mascot, desktop sidebar and grids, night-blue dark mode, new icons, clips re-recorded | #34 |
-| 9b | In-app feedback (Settings: send with screenshots, her inbox with edit and done / not done; visitors' notes go only to Sergio by email + `scripts/feedback.py`); no rubber-band scrolling, page pinned behind sheets (both from the fit app) | (in review) |
+| 9b | In-app feedback (Settings: send with screenshots, her inbox with edit and done / not done; visitors' notes go only to Sergio by email + `scripts/feedback.py`); no rubber-band scrolling, page pinned behind sheets (both from the fit app) | #35 |
 
 **Live at <https://pantry.sergiovanegas.com>** (also <https://d3bg4vze5d4ttm.cloudfront.net>).
 Everything through 9a is merged and deployed; 9b is on branch `stage-9b-feedback-scroll` in
-review (2026-11-24). It needs `terraform apply` (the guest-feedback alarm) before merging. Local (Docker + ngrok) is the place to test changes before they're merged; she
+review as #35 (2026-11-24); its `terraform apply` (guest-feedback alarm) is done. Local (Docker + ngrok) is the place to test changes before they're merged; she
 only uses the live site.
 
 ## 4. Architecture

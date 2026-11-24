@@ -18,7 +18,7 @@ Both ported from the fit app (`C:\Users\smvan\repos\fit-mgmt-app`), where they w
 - **Scrolling:** no rubber band past the app's edges (`overscroll-behavior: none`), sheet
   content and swipe strips don't bounce, and the page behind a sheet/viewer/stock-up stays put
   (`lib/scrollLock.ts`, iOS-safe), coming back to the same spot.
-- Needs `terraform apply` (2 new resources: log filter + alarm) before merge; plan is clean.
+- `terraform apply` done 2026-11-24 (2 new resources: log filter + alarm). PR #35.
 - Not ported from fit: its sheet-goes-full-screen-while-typing fix (iPhone keyboard). Worth it
   if the feedback sheet's keyboard covers things on her phone.
 
