@@ -7,7 +7,7 @@ from fastapi.responses import JSONResponse
 
 from app import db, ssm, storage
 from app.config import on_aws, origin_secret, session_secret
-from app.routers import categories, grocery_list, items, photos, recognition, session, settings
+from app.routers import categories, feedback, grocery_list, items, photos, recognition, session, settings
 
 
 @asynccontextmanager
@@ -50,6 +50,7 @@ app.include_router(settings.router)
 app.include_router(grocery_list.router)
 app.include_router(photos.router)
 app.include_router(recognition.router)
+app.include_router(feedback.router)
 
 
 @app.get("/api/health")

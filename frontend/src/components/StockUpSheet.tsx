@@ -6,6 +6,8 @@ import { createPortal } from "react-dom";
 import { api, type Category, type Item, type ItemInput, type Package } from "../api";
 import { useCategories, useItems } from "../hooks";
 import { formatExpiry } from "../lib/dates";
+import { rememberPlace } from "../lib/place";
+import { lockScroll } from "../lib/scrollLock";
 import { addTo, defaultAmount, draftItem, findCategory, findMatch, packageFrom, type Amount } from "../lib/stockup";
 import { useShotQueue, type Shot } from "../lib/useShotQueue";
 import { BottomSheet } from "./BottomSheet";
@@ -97,9 +99,10 @@ export function StockUpSheet({ onClose }: { onClose: () => void }) {
   };
 
   useEffect(() => {
-    document.body.style.overflow = "hidden";
+    const unlock = lockScroll();
+    rememberPlace("Stock your pantry");
     return () => {
-      document.body.style.overflow = "";
+      unlock();
       refresh();
     };
   }, []);
@@ -349,7 +352,7 @@ export function StockUpSheet({ onClose }: { onClose: () => void }) {
         )}
 
         {step === "fix" && (
-          <div className="min-h-0 flex-1 overflow-y-auto">
+          <div className="min-h-0 flex-1 overflow-y-auto overscroll-none">
             <p className="mb-3 text-sm text-stone-600">Tap one to fill it in. You can also skip any you don't want to add.</p>
             <ul className="space-y-2">
               {toFix.map((shot) => (

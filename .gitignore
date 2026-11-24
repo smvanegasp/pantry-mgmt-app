@@ -39,3 +39,6 @@ frontend/public/tutorials/*-failed.png
 # ngrok tunnel password (copy ngrok-policy.example.yml); Terraform values like the alert email
 ngrok-policy.yml
 *.tfvars
+
+# Feedback screenshots downloaded by scripts/feedback.py (private, never commit).
+private/

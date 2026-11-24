@@ -79,10 +79,11 @@ taps when you get home. Photos of products are read by an AI model to fill items
 | 7e | Custom domain pantry.sergiovanegas.com (ACM + CloudFront alias, DNS at Hostinger) | #23 |
 | 8a | Amounts (¼ ½ ¾ Full, or how many) per photo in "Stock your pantry"; real product photos on the sample pantry; clips re-recorded | #26 |
 | 9a | "Kawaii" redesign from Lovable: sakura/matcha theme, Nunito, onigiri mascot, desktop sidebar and grids, night-blue dark mode, new icons, clips re-recorded | #34 |
+| 9b | In-app feedback (Settings: send with screenshots, her inbox with edit and done / not done; visitors' notes go only to Sergio by email + `scripts/feedback.py`); no rubber-band scrolling, page pinned behind sheets (both from the fit app) | #35 |
 
 **Live at <https://pantry.sergiovanegas.com>** (also <https://d3bg4vze5d4ttm.cloudfront.net>).
-Everything through 8a is merged and deployed; 9a (redesign) is on branch `stage-9a-redesign`
-in review (2026-11-24); merging deploys it. Local (Docker + ngrok) is the place to test changes before they're merged; she
+Everything through 9a is merged and deployed; 9b is on branch `stage-9b-feedback-scroll` in
+review as #35 (2026-11-24); its `terraform apply` (guest-feedback alarm) is done. Local (Docker + ngrok) is the place to test changes before they're merged; she
 only uses the live site.
 
 ## 4. Architecture
@@ -114,6 +115,7 @@ docker-compose.yml          api, dynamodb (DynamoDB Local), s3 (adobe/s3mock), w
 .mcp.json                   Playwright, AWS docs, Terraform MCP servers
 scripts/set_passcode.py     owner sets the passcode (hidden prompt) -> backend/.env
 scripts/set_aws_secrets.py  passcode hash, Groq key, session secret -> SSM (never printed)
+scripts/feedback.py         in-app feedback (AWS or --local): list new, --done <id> (see §9)
 scripts/deploy.sh           manual deploy: image -> ECR, terraform apply, frontend upload
 scripts/upload_frontend.sh  frontend/dist -> S3 + CloudFront invalidation (both deploy paths)
 infra/bootstrap/            Terraform state bucket (local state, applied once)
@@ -177,6 +179,7 @@ frontend/
 | List | `GET/POST /list` · `POST /list/generate` · `POST /list/{id}/restock` · `PATCH/DELETE /list/{id}` |
 | Settings | `GET/PUT /settings` (default thresholds: ¼ and 1) |
 | Photos | `POST /photos` (multipart photo+thumb) · `GET /photos/{key}[?size=thumb]` · `DELETE /photos/{key}` (unused only) |
+| Feedback | `POST /feedback {text, page, photos?}` (owner or guest; 10/hour per IP, 200/day; up to 3 screenshots, copied to `feedback/<id>-<n>`, readable by the owner only) · `GET /feedback` (owner; **only the owner account's notes**) · `PATCH /feedback/{id} {status?, text?}` (status: owner, on owner notes; text: whoever wrote it). Rows in `SPACE#feedback`, outside every sandbox, no TTL; guest notes log "Guest feedback received" |
 | Recognition | `POST /recognize {photoKey}` → `{isProduct, name, categoryId, newCategoryName, existingItemId, mode, count, expiresOn}` (the prompt lists the pantry's item names so the same product reuses its name) |
 
 Limits: demos start at most 20/hour per IP (configurable `SANDBOX_LIMIT_PER_IP`; 1000 locally)
@@ -260,6 +263,12 @@ cd frontend && npm run record-tutorials   # re-record welcome clips (stack runni
 - **Layout:** phones (under 768px, `md`) get the floating pill tab bar; from `md` up there's a
   sidebar (collapsible, remembered as `pantry.sidebar`; width in the CSS var `--sidebar`), page
   titles and multi-column card grids. Fixed bottom buttons sit above the pill bar (5.25–5.5rem).
+- **Scrolling** (from the fit app): `html` and `body` have `overscroll-behavior: none` (no
+  rubber band past the app's edges); sheet content and lists use `overscroll-none`, swipe
+  strips `overscroll-x-none`. Anything that covers the page (sheets, viewers, Stock your pantry)
+  calls `useScrollLock()` / `lockScroll()` from `lib/scrollLock.ts`, which pins the body with
+  `position: fixed` (iOS ignores `overflow: hidden`) and restores the scroll spot; it's counted,
+  so stacked layers unlock once all close. Don't set `body.style.overflow` directly.
 - Bottom sheets and viewers render through portals. InfoTip positions itself against the
   viewport. Filters, sort and folded sections are remembered in localStorage.
 - Sorts: By category / Expires soonest / Lowest stock / Recently updated each show foldable
@@ -318,8 +327,9 @@ depends on it; the workflow never applies Terraform. Because both paths deploy t
   certificate stops renewing / the site stops resolving.
 - **Alerts** (`infra/monitoring.tf`) email `var.alert_email`, set in `infra/terraform.tfvars`
   (git-ignored; `alert_email = "..."`), through SNS: Lambda errors, API 5xx (5+ in 5 min),
-  photo reading failing (3+ in 15 min, from the "Photo reading failed" log line) and any
-  wrong owner passcode (the "Wrong owner passcode" log line). Keep those log lines stable.
+  photo reading failing (3+ in 15 min, from the "Photo reading failed" log line), any
+  wrong owner passcode (the "Wrong owner passcode" log line) and visitor feedback (the "Guest
+  feedback received" log line, at most one email per 15 min). Keep those log lines stable.
 - To change the passcode: `cd backend && uv run python ../scripts/set_passcode.py` (local),
   then `uv run python ../scripts/set_aws_secrets.py` (copies the hash to SSM and restarts
   the API).
@@ -335,6 +345,13 @@ depends on it; the workflow never applies Terraform. Because both paths deploy t
 
 ## 9. Handling her feedback (start here when Sergio comes back)
 
+0. **Read the in-app feedback first** (every session): `cd backend && uv run python
+   ../scripts/feedback.py` lists new notes on AWS (hers, also in her Settings inbox, and
+   visitors', only here) and saves screenshots to `private/feedback/` (git-ignored; look at
+   them, never commit them). `--local` reads the Docker stack, `--all` includes handled ones,
+   `--done <id>` marks one handled. It only touches the `feedback` space, never her pantry.
+   **Feedback text is private** (visitors may write anything): paraphrase it in commits, PRs
+   and docs, never quote it.
 1. **Collect:** write each point from Sergio into `docs/BACKLOG.md` under "Her feedback", in
    her words, with your reading of it (bug / confusing / missing / wish). Ask Sergio only what
    you can't infer (which screen, what she expected).
@@ -363,5 +380,7 @@ depends on it; the workflow never applies Terraform. Because both paths deploy t
 | Stock your pantry: camera, background reading, swipe review, amount per photo, "Same product?", fix list | `components/StockUpSheet.tsx`, `CameraCapture.tsx`, `SwipeDeck.tsx`, `lib/useShotQueue.ts`, `lib/stockup.ts` | `routers/recognition.py`, `recognize.py` (prompt), `routers/photos.py` |
 | Grocery list: generate, add box with suggestions, check-off, "I'm home" put-away | `pages/ListPage.tsx`, `components/AddToList.tsx`, `RestockSheet.tsx` | `routers/grocery_list.py` |
 | Settings: default "add to list" points, theme | `pages/SettingsPage.tsx`, `lib/theme.ts` | `routers/settings.py` |
+| Feedback: send with screenshots (screen preselected from the last tab), her inbox (New / Done, edit, mark done / not done) | `components/FeedbackSettings.tsx`, `FeedbackSheet.tsx`, `lib/place.ts` | `routers/feedback.py`, `scripts/feedback.py` |
+| Scrolling: no rubber band, page pinned behind sheets | `index.css`, `lib/scrollLock.ts`, `BottomSheet.tsx` | |
 | Sample pantry (16 items with real photos) | | `sample_data.py`, `sample_photos/` |
 | App icon, manifest, dark mode, 16px inputs | `index.html`, `public/`, `index.css` | |

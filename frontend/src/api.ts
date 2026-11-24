@@ -107,6 +107,20 @@ export interface Suggestion {
   expiresOn: string | null;
 }
 
+/** A note left in Settings. The inbox shows only the owner account's notes. */
+export interface Feedback {
+  id: string;
+  text: string;
+  /** Which screen it's about ("Pantry", "List", ...). */
+  page: string;
+  role: "owner" | "guest";
+  createdAt: string;
+  status: "new" | "done";
+  /** Screenshot keys under feedback/, shown with photoUrl. */
+  photos: string[];
+  editedAt: string | null;
+}
+
 export function photoUrl(photoKey: string, size: "full" | "thumb" = "full"): string {
   return `/api/photos/${photoKey}${size === "thumb" ? "?size=thumb" : ""}`;
 }
@@ -121,6 +135,13 @@ export const api = {
   /** Delete an uploaded photo that no item uses (e.g. a bad shot). */
   discardPhoto: (photoKey: string) => request<void>(`/photos/${photoKey}`, { method: "DELETE" }),
   recognize: (photoKey: string) => request<Suggestion>("/recognize", json("POST", { photoKey })),
+
+  sendFeedback: (text: string, page: string, photos: string[] = []) =>
+    request<Feedback>("/feedback", json("POST", { text, page, photos })),
+  editFeedback: (id: string, text: string) => request<Feedback>(`/feedback/${id}`, json("PATCH", { text })),
+  listFeedback: () => request<Feedback[]>("/feedback"),
+  markFeedback: (id: string, status: Feedback["status"]) =>
+    request<Feedback>(`/feedback/${id}`, json("PATCH", { status })),
 
   getSession: () => request<SessionInfo>("/session"),
   startGuest: () => request<SessionInfo>("/session/guest", { method: "POST" }),
